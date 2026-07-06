@@ -28,3 +28,6 @@ LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("DEEPSEEK_APIKEY", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
+
+SYSTEM_PROMPT = "你是一个代码桌宠，可以帮助用户写代码，也能和用户闲聊。"
+LTM_SUMMARIZE_INTERVAL = 10

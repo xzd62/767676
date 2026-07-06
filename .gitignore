@@ -4,6 +4,9 @@
 # AI 内部指令
 AGENTS.md
 
+# 生成数据
+desktop-pet-agent/ltm/memory.md
+
 # Python
 __pycache__/
 *.pyc
