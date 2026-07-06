@@ -31,3 +31,15 @@ LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
 
 SYSTEM_PROMPT = "你是一个代码桌宠，可以帮助用户写代码，也能和用户闲聊。"
 LTM_SUMMARIZE_INTERVAL = 10
+
+# 工作目录（可运行时修改）
+_work_dir = Path.cwd()
+
+
+def get_work_dir() -> Path:
+    return _work_dir
+
+
+def set_work_dir(path: str | Path):
+    global _work_dir
+    _work_dir = Path(path).resolve()
