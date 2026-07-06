@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from llm.client import LLMClient
+from agent.core import Agent
 
 
 class ConsoleWindow:
@@ -11,9 +11,8 @@ class ConsoleWindow:
     HEIGHT = 560
     PET_SIZE = 120
 
-    def __init__(self, llm_client: LLMClient):
-        self._llm = llm_client
-        self._messages: list[dict] = []
+    def __init__(self, agent: Agent):
+        self._agent = agent
 
         self._root = tk.Tk()
         self._root.title("CodePet")
@@ -119,7 +118,6 @@ class ConsoleWindow:
 
         self._append_message("你", user_text, "#666")
 
-        self._messages.append({"role": "user", "content": user_text})
         self._chat_display.configure(state="normal")
         self._chat_display.insert("end", "\nCodePet 正在思考...\n")
         self._chat_display.see("end")
@@ -127,8 +125,7 @@ class ConsoleWindow:
         self._root.update()
 
         try:
-            reply = self._llm.chat(self._messages)
-            self._messages.append({"role": "assistant", "content": reply})
+            reply = self._agent.process(user_text)
             self._chat_display.configure(state="normal")
             self._chat_display.delete("end-2l", "end-1l")
             self._chat_display.configure(state="disabled")

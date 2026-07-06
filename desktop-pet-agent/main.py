@@ -2,15 +2,21 @@
 
 import threading
 
+from agent.core import Agent
 from llm.client import LLMClient
+from ltm.store import MemoryStore
+from stm.context import SessionContext
 from ui.console import ConsoleWindow
 from ui.tray import TrayApp
 
 
 def main():
     llm = LLMClient()
+    stm = SessionContext(llm_client=llm)
+    ltm = MemoryStore()
+    agent = Agent(llm=llm, stm=stm, ltm=ltm)
 
-    console = ConsoleWindow(llm)
+    console = ConsoleWindow(agent)
 
     def on_open():
         console.show()
