@@ -45,6 +45,24 @@ class Agent:
         )
         return reply
 
+    def process_stream(self, user_input: str):
+        """流式版 process，逐个 yield token。流结束自动保存到 stm/ltm。"""
+        self._stm.add_message("user", user_input)
+        history = self._stm.get_messages()
+
+        full_parts = []
+        for token in self._llm.chat_stream(history):
+            full_parts.append(token)
+            yield token
+
+        reply = "".join(full_parts)
+        self._stm.add_message("assistant", reply)
+        self._ltm.try_summarize(
+            self._llm,
+            [{"role": "user", "content": user_input},
+             {"role": "assistant", "content": reply}],
+        )
+
     def reset(self):
         self._stm.clear()
         self._ltm.reset_counter()

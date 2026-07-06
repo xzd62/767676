@@ -1,3 +1,4 @@
+import json
 import httpx
 
 from config.settings import (
@@ -35,6 +36,27 @@ class LLMClient:
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]["content"]
+
+    def chat_stream(self, messages: list[dict]):
+        """流式对话，逐个 yield 文本 token。"""
+        request_body = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": self.temperature,
+            "stream": True,
+        }
+        with self.client.stream("POST", "/chat/completions", json=request_body) as response:
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if not line or not line.startswith("data: "):
+                    continue
+                payload = line[6:]
+                if payload == "[DONE]":
+                    break
+                chunk = json.loads(payload)
+                delta = chunk["choices"][0]["delta"]
+                if "content" in delta and delta["content"]:
+                    yield delta["content"]
 
     # ------------------------------------------------------------------
     # 以下是工具方法（可选）

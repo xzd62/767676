@@ -1,3 +1,4 @@
+import threading
 import tkinter as tk
 from tkinter import ttk
 
@@ -119,22 +120,30 @@ class ConsoleWindow:
         self._append_message("你", user_text, "#666")
 
         self._chat_display.configure(state="normal")
-        self._chat_display.insert("end", "\nCodePet 正在思考...\n")
+        self._chat_display.insert("end", "\nCodePet：")
+        self._stream_mark = self._chat_display.index("end-1c")
+        self._chat_display.configure(state="disabled")
+
+        def worker():
+            try:
+                for token in self._agent.process_stream(user_text):
+                    self._root.after(0, self._append_stream, token)
+            except Exception as e:
+                self._root.after(0, self._show_stream_error, str(e))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _append_stream(self, token: str):
+        self._chat_display.configure(state="normal")
+        self._chat_display.insert(self._stream_mark, token)
         self._chat_display.see("end")
         self._chat_display.configure(state="disabled")
-        self._root.update()
 
-        try:
-            reply = self._agent.process(user_text)
-            self._chat_display.configure(state="normal")
-            self._chat_display.delete("end-2l", "end-1l")
-            self._chat_display.configure(state="disabled")
-            self._append_message("CodePet", reply, "#FF9F43")
-        except Exception as e:
-            self._chat_display.configure(state="normal")
-            self._chat_display.delete("end-2l", "end-1l")
-            self._chat_display.configure(state="disabled")
-            self._append_message("CodePet", f"（出错了：{e}）", "red")
+    def _show_stream_error(self, msg: str):
+        self._chat_display.configure(state="normal")
+        self._chat_display.insert("end", f"\n（出错了：{msg}）\n")
+        self._chat_display.see("end")
+        self._chat_display.configure(state="disabled")
 
     def _append_message(self, sender: str, text: str, color: str):
         self._chat_display.configure(state="normal")
