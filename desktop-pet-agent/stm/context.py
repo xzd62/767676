@@ -17,8 +17,10 @@ class SessionContext:
     # 公开 API
     # ------------------------------------------------------------------
 
-    def add_message(self, role: str, content: str):
-        self._messages.append({"role": role, "content": content})
+    def add_message(self, role: str, content: str, **kwargs):
+        msg = {"role": role, "content": content}
+        msg.update(kwargs)
+        self._messages.append(msg)
         self._trim()
 
     def add_system(self, content: str):

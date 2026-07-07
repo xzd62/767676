@@ -21,21 +21,26 @@ class LLMClient:
 
         self.client = httpx.Client(base_url=self.base_url, headers={"Authorization": f"Bearer {self.api_key}"}, timeout=LLM_TIMEOUT)
 
-    # ------------------------------------------------------------------
-    # 以下是你需要写的核心方法
-    # ------------------------------------------------------------------
 
-    def chat(self, messages: list[dict]) -> str:
-        """发送对话消息，返回助手回复文本。"""
+
+    def chat(self, messages: list[dict], tools: list[dict] | None = None) -> dict:
+        """发送对话消息，返回助手回复消息（含 content 和/或 tool_calls）。
+
+        返回格式：
+          - 纯文本: {"role": "assistant", "content": "你好"}
+          - 调工具: {"role": "assistant", "content": None, "tool_calls": [...]}
+        """
         request_body = {
             "model": self.model,
             "messages": messages,
             "temperature": self.temperature,
         }
+        if tools:
+            request_body["tools"] = tools
         response = self.client.post("/chat/completions", json=request_body)
         response.raise_for_status()
         data = response.json()
-        return data["choices"][0]["message"]["content"]
+        return data["choices"][0]["message"]
 
     def chat_stream(self, messages: list[dict]):
         """流式对话，逐个 yield 文本 token。"""

@@ -1,0 +1,57 @@
+"""读取文件工具。"""
+
+from tool.registry import registry
+
+READ_FILE_SCHEMA = {
+    "name": "read_file",
+    "description": "读取指定文件的内容",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "文件路径（相对于工作目录，或绝对路径）",
+            },
+        },
+        "required": ["path"],
+    },
+}
+
+
+def read_file_handler(args):
+    from pathlib import Path
+    from config.settings import get_work_dir
+
+    raw = args["path"]
+    path = Path(raw)
+
+    if not path.is_absolute():
+        path = get_work_dir() / path
+
+    resolved = path.resolve()
+
+    # 安全校验：禁止读取工作目录之外的文件
+    work_dir = get_work_dir().resolve()
+    if work_dir not in resolved.parents and resolved != work_dir:
+        return {"success": False, "error": "不允许读取工作目录之外的文件"}
+
+    # 安全校验：限制最大 1MB
+    if resolved.stat().st_size > 1024 * 1024:
+        return {"success": False, "error": "文件超过 1MB，不支持读取"}
+
+    # 尝试 UTF-8，失败则回退系统编码
+    try:
+        content = resolved.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        import locale
+        encoding = locale.getpreferredencoding()
+        content = resolved.read_text(encoding=encoding)
+
+    return {"success": True, "content": content}
+
+
+registry.register(
+    name="read_file",
+    handler=read_file_handler,
+    schema=READ_FILE_SCHEMA,
+)

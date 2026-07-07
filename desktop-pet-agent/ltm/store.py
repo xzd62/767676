@@ -61,11 +61,11 @@ class MemoryStore:
             recent_messages=recent_text,
         )
 
-        content = llm_client.chat([
+        result = llm_client.chat([
             {"role": "system", "content": SUMMARIZE_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ])
-        return content
+        return result["content"]
 
     def reset_counter(self):
         self._round_counter = 0
