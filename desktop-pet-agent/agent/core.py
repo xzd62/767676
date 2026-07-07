@@ -53,7 +53,8 @@ class Agent:
                     args = json.loads(tc["function"]["arguments"])
                     self._on_status(f"调用工具 {name}…")
                     obs = registry.dispatch(name, args)
-                    got = str(obs.get("content", ""))[:80] if obs.get("success") else str(obs)
+                    summary = obs.get("content") or obs.get("files") or str(obs)
+                    got = str(summary)[:80] if obs.get("success") else str(obs)
                     self._on_status(f"工具返回: {got}")
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
@@ -75,7 +76,8 @@ class Agent:
                         args = {"path": args_raw}
                     self._on_status(f"调用工具 {tname}…")
                     obs = registry.dispatch(tname, args)
-                    got = str(obs.get("content", ""))[:80] if obs.get("success") else str(obs)
+                    summary = obs.get("content") or obs.get("files") or str(obs)
+                    got = str(summary)[:80] if obs.get("success") else str(obs)
                     self._on_status(f"工具返回: {got}")
                     self._stm.add_message("assistant", text)
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),

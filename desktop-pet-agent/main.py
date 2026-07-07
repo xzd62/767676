@@ -19,6 +19,7 @@ from ui.tray import TrayApp
 # 加载并注册所有工具
 import tool.read_file
 import tool.write_file
+import tool.glob
 
 
 def main():
