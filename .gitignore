@@ -6,6 +6,7 @@ AGENTS.md
 
 # 生成数据
 desktop-pet-agent/ltm/memory.md
+desktop-pet-agent/data/
 
 # Python
 __pycache__/

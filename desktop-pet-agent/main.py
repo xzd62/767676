@@ -12,6 +12,7 @@ from agent.core import Agent
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
+from stm.manager import SessionManager
 from ui.console import ConsoleWindow
 from ui.settings_window import SettingsWindow
 from ui.tray import TrayApp
@@ -30,8 +31,9 @@ def main():
     stm = SessionContext(llm_client=llm)
     ltm = MemoryStore()
     agent = Agent(llm=llm, stm=stm, ltm=ltm)
+    session_mgr = SessionManager()
 
-    console = ConsoleWindow(agent)
+    console = ConsoleWindow(agent, session_mgr)
     settings = SettingsWindow(console._root)
 
     def on_open():

@@ -1,0 +1,6 @@
+<svg viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="15.000000" height="15.000000" fill="none" customFrame="#000000">
+	<rect id="key" width="15.000000" height="15.000000" x="0.000000" y="0.000000" />
+	<path id="矢量 64" d="M9.6875 4.6875L11.125 6.125C11.2023 6.20081 11.2981 6.25522 11.4028 6.2829C11.5075 6.31058 11.6175 6.31058 11.7222 6.2829C11.8269 6.25522 11.9227 6.20081 12 6.125L13.3125 4.8125C13.3883 4.73516 13.4427 4.63945 13.4704 4.53475C13.4981 4.43005 13.4981 4.31995 13.4704 4.21525C13.4427 4.11055 13.3883 4.01484 13.3125 3.9375L11.875 2.5" fill-rule="nonzero" stroke="rgb(122,96,80)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.250000" />
+	<path id="矢量 65" d="M13.125 1.25L7.125 7.25" stroke="rgb(122,96,80)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.250000" />
+	<circle id="椭圆 4" cx="4.6875" cy="9.6875" r="3.4375" stroke="rgb(122,96,80)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.250000" />
+</svg>

@@ -3,18 +3,20 @@ import tkinter as tk
 from tkinter import ttk
 
 from agent.core import Agent
+from stm.manager import SessionManager
 
 
 class ConsoleWindow:
     """控制台窗口：宠物头像 + 对话界面。"""
 
-    WIDTH = 420
-    HEIGHT = 560
-    PET_SIZE = 120
+    WIDTH = 480
+    HEIGHT = 600
+    PET_SIZE = 100
 
-    def __init__(self, agent: Agent):
+    def __init__(self, agent: Agent, session_mgr: SessionManager):
         self._agent = agent
         self._agent._on_status = self._append_status
+        self._session_mgr = session_mgr
 
         self._root = tk.Tk()
         self._root.title("CodePet")
@@ -23,6 +25,9 @@ class ConsoleWindow:
         self._root.protocol("WM_DELETE_WINDOW", self._hide)
 
         self._build_ui()
+        self._session_mgr.ensure_session(agent._stm)
+        self._refresh_session_list()
+        self._render_history()
         self._root.withdraw()
 
     # ------------------------------------------------------------------
@@ -31,19 +36,32 @@ class ConsoleWindow:
 
     def _build_ui(self):
         self._root.columnconfigure(0, weight=1)
-        self._root.rowconfigure(1, weight=1)
+        self._root.rowconfigure(2, weight=1)
+
+        # --- 会话工具栏 ---
+        toolbar = ttk.Frame(self._root, padding=(10, 8, 10, 0))
+        toolbar.grid(row=0, column=0, sticky="ew")
+        toolbar.columnconfigure(0, weight=1)
+
+        self._session_var = tk.StringVar()
+        self._session_combo = ttk.Combobox(toolbar, textvariable=self._session_var,
+                                           state="readonly", font=("Microsoft YaHei", 9))
+        self._session_combo.grid(row=0, column=0, sticky="ew", padx=(0, 6))
+        self._session_combo.bind("<<ComboboxSelected>>", self._on_session_switch)
+
+        ttk.Button(toolbar, text="新对话", command=self._on_new_session, width=8).grid(row=0, column=1)
 
         # --- 宠物头像区域 ---
-        pet_frame = ttk.Frame(self._root, padding=10)
-        pet_frame.grid(row=0, column=0, sticky="ew")
-        self._canvas = tk.Canvas(pet_frame, width=self.PET_SIZE, height=self.PET_SIZE + 10,
+        pet_frame = ttk.Frame(self._root, padding=6)
+        pet_frame.grid(row=1, column=0, sticky="ew")
+        self._canvas = tk.Canvas(pet_frame, width=self.PET_SIZE, height=self.PET_SIZE + 6,
                                  highlightthickness=0, bg="#f0f0f0")
         self._canvas.pack()
         self._draw_pet()
 
         # --- 对话显示区域 ---
-        chat_frame = ttk.Frame(self._root, padding=(10, 0, 10, 10))
-        chat_frame.grid(row=1, column=0, sticky="nsew")
+        chat_frame = ttk.Frame(self._root, padding=(10, 0, 10, 6))
+        chat_frame.grid(row=2, column=0, sticky="nsew")
         chat_frame.columnconfigure(0, weight=1)
         chat_frame.rowconfigure(0, weight=1)
 
@@ -58,7 +76,7 @@ class ConsoleWindow:
 
         # --- 输入区域 ---
         input_frame = ttk.Frame(self._root, padding=(10, 0, 10, 10))
-        input_frame.grid(row=2, column=0, sticky="ew")
+        input_frame.grid(row=3, column=0, sticky="ew")
         input_frame.columnconfigure(0, weight=1)
 
         self._input_var = tk.StringVar()
@@ -124,6 +142,9 @@ class ConsoleWindow:
             try:
                 reply = self._agent.process(user_text)
                 self._root.after(0, self._show_reply, reply)
+                conv_id = self._session_mgr.get_current_id()
+                if conv_id:
+                    self._session_mgr.save_messages(conv_id, self._agent._stm.get_messages())
             except Exception as e:
                 self._root.after(0, self._show_stream_error, str(e))
 
@@ -156,6 +177,52 @@ class ConsoleWindow:
         self._chat_display.tag_configure("sender", foreground=color, font=("Microsoft YaHei", 10, "bold"))
         self._chat_display.see("end")
         self._chat_display.configure(state="disabled")
+
+    # ------------------------------------------------------------------
+    # 会话管理
+    # ------------------------------------------------------------------
+
+    def _refresh_session_list(self):
+        convs = self._session_mgr.list_conversations()
+        names = [f"{c['name']}" for c in convs]
+        self._session_combo["values"] = names
+        current = self._session_mgr.get_current_id()
+        for i, c in enumerate(convs):
+            if c["id"] == current:
+                self._session_combo.current(i)
+                break
+
+    def _on_session_switch(self, event=None):
+        idx = self._session_combo.current()
+        if idx < 0:
+            return
+        convs = self._session_mgr.list_conversations()
+        if idx < len(convs):
+            self._session_mgr.switch_to(convs[idx]["id"], self._agent._stm)
+            self._agent._setup_system_prompt()
+            self._render_history()
+
+    def _on_new_session(self):
+        self._session_mgr.new_session(self._agent._stm)
+        self._agent._setup_system_prompt()
+        self._render_history()
+        self._refresh_session_list()
+
+    def _render_history(self):
+        self._chat_display.configure(state="normal")
+        self._chat_display.delete("1.0", "end")
+        self._chat_display.configure(state="disabled")
+        for msg in self._agent._stm.get_messages():
+            role = msg["role"]
+            content = msg.get("content", "") or ""
+            if role == "system":
+                continue
+            if role == "user":
+                self._append_message("你", content, "#666")
+            elif role == "assistant":
+                self._append_message("CodePet", content, "#FF9F43")
+            elif role == "tool":
+                self._append_status(f"工具返回: {content[:60]}")
 
     # ------------------------------------------------------------------
     # 窗口生命周期

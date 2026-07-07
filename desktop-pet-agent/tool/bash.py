@@ -45,7 +45,7 @@ def bash_handler(args):
     
     output = result.stdout
     if result.stderr:
-        output += "\n" +result.stderr
+        output += "\n" + result.stderr
 
     return {
         "success": result.returncode == 0,

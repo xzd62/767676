@@ -38,6 +38,11 @@ class SessionContext:
     def clear(self):
         self._messages.clear()
 
+    def load_messages(self, messages: list[dict]):
+        """替换当前所有消息（用于从 SQLite 恢复会话）。"""
+        self._messages = list(messages)
+        self._trim()
+
     def count_messages(self) -> int:
         return len(self._messages)
 
