@@ -11,7 +11,8 @@ body {
   background: #f5ede0; color: #2c1f14;
   height: 100vh; display: flex; overflow: hidden;
 }
-/* sidebar */
+
+/* ===== 侧栏 ===== */
 .sidebar {
   width: 240px; background: #2c1f14; color: #f5ede0;
   display: flex; flex-direction: column; flex-shrink: 0;
@@ -21,27 +22,42 @@ body {
   display: flex; align-items: center; gap: 8px;
   font-weight: bold; font-size: 15px;
 }
-.conv-list { flex: 1; overflow-y: auto; padding: 12px; }
-.conv-item {
+.nav { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
   padding: 10px 12px; border-radius: 8px; cursor: pointer;
-  font-size: 13px; color: #a08c78; margin-bottom: 2px;
+  font-size: 13px; color: #a08c78; display: flex; align-items: center; gap: 10px;
+  border: none; background: none; width: 100%; text-align: left; font-family: inherit;
+}
+.nav-item:hover { background: #3d2e1e; color: #f5ede0; }
+.nav-item.active { background: #3d2e1e; color: #f5ede0; font-weight: bold; }
+.nav-item .icon { width: 18px; height: 18px; flex-shrink: 0; }
+.nav-conv-list { margin-left: 28px; margin-top: 4px; }
+.nav-conv-item {
+  padding: 8px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; color: #7a6050; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
   display: flex; justify-content: space-between; align-items: center;
 }
-.conv-item:hover, .conv-item.active { background: #3d2e1e; color: #f5ede0; }
-.conv-item .del {
-  display: none; font-size: 14px; color: #e8783a; cursor: pointer;
-  padding: 0 4px; border-radius: 4px;
+.nav-conv-item:hover, .nav-conv-item.active { background: #3d2e1e; color: #f5ede0; }
+.nav-conv-item .del { display: none; font-size: 12px; color: #e8783a; cursor: pointer; padding: 0 4px; }
+.nav-conv-item:hover .del { display: block; }
+.nav-conv-item .del:hover { background: #5a3a2a; border-radius: 3px; }
+.sidebar-footer {
+  padding: 14px 16px; border-top: 1px solid #3d2e1e;
+  font-size: 11px; color: #7a6050;
 }
-.conv-item:hover .del { display: block; }
-.conv-item .del:hover { background: #5a3a2a; }
-.sidebar-footer { padding: 14px 16px; border-top: 1px solid #3d2e1e; }
-/* main */
+
+/* ===== 主区域 ===== */
 .main { flex: 1; display: flex; flex-direction: column; }
 .header {
   padding: 18px 32px; border-bottom: 1px solid #e8d8c4;
   display: flex; justify-content: space-between; align-items: center;
 }
 .header h2 { font-size: 19px; }
+.page { display: none; flex-direction: column; flex: 1; min-height: 0; }
+.page.active { display: flex; }
+
+/* 按钮 */
 .btn {
   padding: 7px 14px; border: none; border-radius: 6px;
   cursor: pointer; font-size: 12px; font-weight: bold; font-family: inherit;
@@ -50,7 +66,9 @@ body {
 .btn-primary:hover { background: #d06a2e; }
 .btn-secondary { background: #ede0d0; color: #2c1f14; }
 .btn-secondary:hover { background: #e0d0bc; }
-.messages { flex: 1; overflow-y: auto; padding: 20px 32px; }
+
+/* ===== 对话页面 ===== */
+.messages { flex: 1; overflow-y: auto; padding: 20px 32px; min-height: 0; }
 .msg { margin-bottom: 14px; }
 .msg-header { font-size: 12px; color: #a08c78; margin-bottom: 4px; }
 .msg-bubble {
@@ -64,7 +82,6 @@ body {
   background: transparent; color: #a08c78;
   font-size: 12px; font-style: italic; padding: 2px 14px;
 }
-/* input */
 .input-area {
   padding: 14px 32px 20px; border-top: 1px solid #e8d8c4;
   display: flex; gap: 10px;
@@ -82,42 +99,23 @@ body {
 }
 .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* overlay */
-.overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.4); z-index: 100;
-  align-items: center; justify-content: center;
-}
-.overlay.open { display: flex; }
-.modal {
-  background: #f5ede0; border-radius: 12px;
-  width: 520px; max-height: 80vh; display: flex;
-  flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-.modal-header {
-  padding: 16px 20px; border-bottom: 1px solid #e8d8c4;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.modal-header h3 { font-size: 16px; }
-.modal-close {
-  background: none; border: none; font-size: 20px;
-  cursor: pointer; color: #7a6050; padding: 4px;
-}
-.modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
-.tabs { display: flex; gap: 0; border-bottom: 1px solid #e8d8c4; margin-bottom: 16px; }
-.tab {
+/* ===== 设置页面 ===== */
+.settings-body { flex: 1; overflow-y: auto; padding: 24px 32px; min-height: 0; }
+.settings-tabs { display: flex; gap: 0; border-bottom: 1px solid #e8d8c4; margin-bottom: 20px; }
+.settings-tab {
   padding: 8px 20px; cursor: pointer; font-size: 13px;
-  color: #a08c78; border-bottom: 2px solid transparent;
+  color: #a08c78; border-bottom: 2px solid transparent; background: none; border-top: none;
+  border-left: none; border-right: none; font-family: inherit;
 }
-.tab.active { color: #e8783a; border-bottom-color: #e8783a; }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-.modal-body textarea {
+.settings-tab.active { color: #e8783a; border-bottom-color: #e8783a; }
+.settings-content { display: none; }
+.settings-content.active { display: block; }
+.settings-body textarea {
   width: 100%; padding: 10px; border: 1px solid #e8d8c4;
   border-radius: 8px; font-size: 13px; font-family: inherit;
-  resize: vertical; outline: none; min-height: 200px;
+  resize: vertical; outline: none; min-height: 220px;
 }
-.modal-body textarea:focus { border-color: #e8783a; }
+.settings-body textarea:focus { border-color: #e8783a; }
 .avatar-row { display: flex; gap: 16px; align-items: flex-start; }
 .avatar-preview {
   width: 120px; height: 120px; border-radius: 10px;
@@ -126,15 +124,11 @@ body {
   overflow: hidden; flex-shrink: 0;
 }
 .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
-.modal-footer {
-  padding: 12px 20px; border-top: 1px solid #e8d8c4;
-  display: flex; justify-content: flex-end; gap: 8px;
-}
-.hidden { display: none; }
 </style>
 </head>
 <body>
 
+<!-- 侧栏 -->
 <div class="sidebar">
   <div class="sidebar-header">
     <svg width="22" height="22" viewBox="0 0 22 22">
@@ -143,45 +137,60 @@ body {
     </svg>
     CodePet
   </div>
-  <div class="conv-list" id="convList"></div>
-  <div class="sidebar-footer">
-    <button class="btn btn-primary" onclick="newSession()" style="width:100%">+ 新对话</button>
+
+  <div class="nav">
+    <button class="nav-item active" onclick="switchPage('chat',this)">
+      <svg class="icon" viewBox="0 0 18 18" fill="none"><path d="M3 3h12a1 1 0 011 1v8a1 1 0 01-1 1H6l-3 3V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/></svg>
+      对话
+    </button>
+    <div class="nav-conv-list" id="navConvList"></div>
+
+    <button class="nav-item" onclick="switchPage('settings',this)">
+      <svg class="icon" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M2.5 2.5l1.5 1.5M14 14l1.5 1.5M2.5 15.5l1.5-1.5M14 4l1.5-1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+      设置
+    </button>
   </div>
+
+  <div class="sidebar-footer">CodePet v0.1.0</div>
 </div>
 
+<!-- 主区域 -->
 <div class="main">
-  <div class="header">
-    <h2 id="convTitle">对话</h2>
-    <div>
-      <button class="btn btn-secondary" onclick="loadConvs()">刷新</button>
-      <button class="btn btn-secondary" onclick="openSettings()">设置</button>
-    </div>
-  </div>
-  <div class="messages" id="messages"></div>
-  <div class="input-area">
-    <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
-    <button class="send-btn" id="sendBtn" onclick="send()">→</button>
-  </div>
-</div>
 
-<!-- 设置弹窗 -->
-<div class="overlay" id="settingsOverlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>设置</h3>
-      <button class="modal-close" onclick="closeSettings()">✕</button>
+  <!-- 对话页 -->
+  <div class="page active" id="pageChat">
+    <div class="header">
+      <h2 id="convTitle">对话</h2>
+      <button class="btn btn-secondary" onclick="newSession()">+ 新对话</button>
     </div>
-    <div class="modal-body">
-      <div class="tabs">
-        <div class="tab active" onclick="switchTab(this,'tabSoul')">灵魂</div>
-        <div class="tab" onclick="switchTab(this,'tabAvatar')">头像</div>
-        <div class="tab" onclick="switchTab(this,'tabTts')">语音</div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="send()">→</button>
+    </div>
+  </div>
+
+  <!-- 设置页 -->
+  <div class="page" id="pageSettings">
+    <div class="header">
+      <h2>设置</h2>
+    </div>
+    <div class="settings-body">
+      <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchSettingTab(this,'stSoul')">灵魂</button>
+        <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">头像</button>
+        <button class="settings-tab" onclick="switchSettingTab(this,'stTts')">语音</button>
       </div>
-      <div class="tab-content active" id="tabSoul">
-        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">人格设定。留空=默认性格，修改后重启对话生效。</p>
+
+      <div class="settings-content active" id="stSoul">
+        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">人格设定。留空=默认性格，修改后需要重启对话生效。</p>
         <textarea id="soulInput"></textarea>
+        <div style="margin-top:12px;text-align:right">
+          <button class="btn btn-primary" onclick="saveSoul()">保存灵魂设定</button>
+        </div>
       </div>
-      <div class="tab-content" id="tabAvatar">
+
+      <div class="settings-content" id="stAvatar">
         <div class="avatar-row">
           <div class="avatar-preview" id="avatarPreview">未选择</div>
           <div>
@@ -191,27 +200,35 @@ body {
           </div>
         </div>
       </div>
-      <div class="tab-content" id="tabTts">
+
+      <div class="settings-content" id="stTts">
         <p style="font-size:12px;color:#a08c78">语音合成功能开发中…</p>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeSettings()">取消</button>
-      <button class="btn btn-primary" onclick="saveSoul()">保存灵魂</button>
-    </div>
   </div>
+
 </div>
 
 <script>
 let convs = [], processing = false;
 
+// ---- 页面切换 ----
+function switchPage(name, btn) {
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('page'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  if (name === 'settings') loadSettings();
+}
+
+// ---- 对话 ----
 function appendMsg(role, content) {
   const el = document.getElementById('messages');
-  const d = document.createElement('div');
-  d.className = 'msg ' + role;
-  const m = {user:'你',assistant:'CodePet',tool:'',status:''};
-  const l = m[role]||'';
-  d.innerHTML = l ? '<div class="msg-header">'+l+'</div><div class="msg-bubble">'+esc(content)+'</div>' : '<div class="msg-bubble">'+esc(content)+'</div>';
+  const d = document.createElement('div'); d.className = 'msg '+role;
+  const labels = {user:'你',assistant:'CodePet'};
+  const l = labels[role]||'';
+  d.innerHTML = l ? '<div class="msg-header">'+esc(l)+'</div><div class="msg-bubble">'+esc(content)+'</div>'
+                  : '<div class="msg-bubble">'+esc(content)+'</div>';
   el.appendChild(d); el.scrollTop = el.scrollHeight;
 }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -241,28 +258,30 @@ async function send() {
   } finally { setBusy(false); }
 }
 
-async function loadConvs() {
-  const data = await pywebview.api.get_convs();
-  convs = JSON.parse(data);
-  const el = document.getElementById('convList'); el.innerHTML = '';
+// ---- 会话侧栏 ----
+function renderConvSidebar() {
+  const el = document.getElementById('navConvList'); el.innerHTML = '';
   convs.forEach((c,i) => {
     const d = document.createElement('div');
-    d.className = 'conv-item'+(i===0?' active':'');
+    d.className = 'nav-conv-item'+(i===0?' active':'');
     d.innerHTML = '<span>'+esc(c.name)+'</span><span class="del" onclick="event.stopPropagation();deleteConv('+c.id+')">✕</span>';
     d.onclick = () => switchConv(c.id);
     el.appendChild(d);
   });
-  if (convs.length>0) document.getElementById('convTitle').textContent = convs[0].name;
+}
+
+async function loadConvs() {
+  const data = await pywebview.api.get_convs();
+  convs = JSON.parse(data);
+  renderConvSidebar();
 }
 async function switchConv(id) {
   await pywebview.api.switch_conv(id);
-  document.querySelectorAll('.conv-item').forEach(e=>e.classList.remove('active'));
-  const data = await pywebview.api.get_convs();
-  convs = JSON.parse(data);
+  document.querySelectorAll('.nav-conv-item').forEach(e=>e.classList.remove('active'));
   const hit = convs.find(c=>c.id===id);
   if (hit) document.getElementById('convTitle').textContent = hit.name;
-  document.querySelectorAll('.conv-item').forEach(e=>{
-    if (e.textContent===(hit?hit.name:'')) e.classList.add('active');
+  document.querySelectorAll('.nav-conv-item').forEach(e=>{
+    if (e.textContent.includes(hit?hit.name:'')) e.classList.add('active');
   });
   document.getElementById('messages').innerHTML = '';
   const msgs = await pywebview.api.get_history();
@@ -281,25 +300,23 @@ async function deleteConv(id) {
   loadConvs();
 }
 
-// 设置
-async function openSettings() {
-  document.getElementById('settingsOverlay').classList.add('open');
+// ---- 设置 ----
+async function loadSettings() {
   const soul = await pywebview.api.get_soul();
   document.getElementById('soulInput').value = soul;
   const av = await pywebview.api.get_avatar();
   updateAvatarPreview(av);
 }
-function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
-function switchTab(el, id) {
-  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
-  el.classList.add('active');
+function switchSettingTab(btn, id) {
+  document.querySelectorAll('.settings-tab').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.settings-content').forEach(e=>e.classList.remove('active'));
+  btn.classList.add('active');
   document.getElementById(id).classList.add('active');
 }
 async function saveSoul() {
   const text = document.getElementById('soulInput').value.trim();
   await pywebview.api.save_soul(text);
-  closeSettings();
+  switchPage('chat', document.querySelector('.nav-item'));
 }
 async function pickAvatar() {
   const path = await pywebview.api.pick_avatar();
@@ -315,6 +332,7 @@ function updateAvatarPreview(path) {
   else { el.innerHTML = '未选择'; }
 }
 
+// ---- 启动 ----
 window.addEventListener('pywebviewready', async () => {
   await loadConvs();
   if (convs.length > 0) await switchConv(convs[0].id);
