@@ -3,10 +3,10 @@ import httpx
 
 from config.settings import (
     LLM_BASE_URL,
-    LLM_API_KEY,
-    LLM_MODEL,
     LLM_TEMPERATURE,
     LLM_TIMEOUT,
+    get_llm_model,
+    get_llm_api_key,
 )
 
 from tool.registry import registry
@@ -15,13 +15,19 @@ from tool.registry import registry
 class LLMClient:
     """LLM 通信客户端，只负责收发消息，不存历史、不决策。"""
 
-    def __init__(self, base_url: str = LLM_BASE_URL, api_key: str = LLM_API_KEY):
+    def __init__(self, base_url: str = LLM_BASE_URL, api_key: str = ""):
         self.base_url = base_url
-        self.api_key = api_key
-        self.model = LLM_MODEL
+        self.api_key = api_key or get_llm_api_key()
+        self.model = get_llm_model()
         self.temperature = LLM_TEMPERATURE
 
         self.client = httpx.Client(base_url=self.base_url, headers={"Authorization": f"Bearer {self.api_key}"}, timeout=LLM_TIMEOUT)
+
+    def refresh(self):
+        """刷新运行时配置（模型名、API Key 变更后调用）。"""
+        self.api_key = get_llm_api_key()
+        self.model = get_llm_model()
+        self.client.headers.update({"Authorization": f"Bearer {self.api_key}"})
 
 
 

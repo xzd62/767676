@@ -178,6 +178,7 @@ body {
     <div class="settings-body">
       <div class="settings-tabs">
         <button class="settings-tab active" onclick="switchSettingTab(this,'stSoul')">灵魂</button>
+        <button class="settings-tab" onclick="switchSettingTab(this,'stModel')">模型</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">头像</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stTts')">语音</button>
       </div>
@@ -187,6 +188,21 @@ body {
         <textarea id="soulInput"></textarea>
         <div style="margin-top:12px;text-align:right">
           <button class="btn btn-primary" onclick="saveSoul()">保存灵魂设定</button>
+        </div>
+      </div>
+
+      <div class="settings-content" id="stModel">
+        <p style="font-size:12px;color:#a08c78;margin-bottom:12px">选择 AI 模型和配置 API 密钥。</p>
+        <div style="margin-bottom:16px">
+          <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:6px">模型</label>
+          <select id="modelSelect" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:white"></select>
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:6px">API Key</label>
+          <input type="password" id="apiKeyInput" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:white">
+        </div>
+        <div style="text-align:right">
+          <button class="btn btn-primary" onclick="saveModel()">保存模型设定</button>
         </div>
       </div>
 
@@ -306,6 +322,15 @@ async function loadSettings() {
   document.getElementById('soulInput').value = soul;
   const av = await pywebview.api.get_avatar();
   updateAvatarPreview(av);
+  // 加载模型
+  const opts = JSON.parse(await pywebview.api.get_model_options());
+  const cur = await pywebview.api.get_model();
+  const sel = document.getElementById('modelSelect'); sel.innerHTML = '';
+  for (const [k,v] of Object.entries(opts)) {
+    const o = document.createElement('option'); o.value = k; o.textContent = v;
+    if (k === cur) o.selected = true;
+    sel.appendChild(o);
+  }
 }
 function switchSettingTab(btn, id) {
   document.querySelectorAll('.settings-tab').forEach(e=>e.classList.remove('active'));
@@ -316,6 +341,13 @@ function switchSettingTab(btn, id) {
 async function saveSoul() {
   const text = document.getElementById('soulInput').value.trim();
   await pywebview.api.save_soul(text);
+  switchPage('chat', document.querySelector('.nav-item'));
+}
+async function saveModel() {
+  const model = document.getElementById('modelSelect').value;
+  const apikey = document.getElementById('apiKeyInput').value.trim();
+  await pywebview.api.set_model(model);
+  if (apikey) await pywebview.api.save_apikey(apikey);
   switchPage('chat', document.querySelector('.nav-item'));
 }
 async function pickAvatar() {

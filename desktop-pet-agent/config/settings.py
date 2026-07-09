@@ -73,3 +73,32 @@ def get_avatar_path() -> str | None:
 def set_avatar_path(path: str | None):
     global _avatar_path
     _avatar_path = path
+
+
+# 模型 & API Key（可运行时修改）
+_llm_model: str = LLM_MODEL
+_llm_api_key: str = LLM_API_KEY
+
+
+MODEL_OPTIONS = {
+    "deepseek-chat": "DeepSeek V4 Flash",
+    "deepseek-reasoner": "DeepSeek V4 Pro",
+}
+
+
+def get_llm_model() -> str:
+    return _llm_model
+
+
+def set_llm_model(name: str):
+    global _llm_model
+    _llm_model = name
+
+
+def get_llm_api_key() -> str:
+    return _llm_api_key
+
+
+def set_llm_api_key(key: str):
+    global _llm_api_key
+    _llm_api_key = key

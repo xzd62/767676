@@ -5,7 +5,14 @@ from pathlib import Path
 import webview
 
 from agent.core import Agent
-from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, set_work_dir
+from config.settings import (
+    get_soul, set_soul,
+    get_avatar_path, set_avatar_path,
+    get_llm_model, set_llm_model,
+    get_llm_api_key, set_llm_api_key,
+    MODEL_OPTIONS,
+    set_work_dir,
+)
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
@@ -94,6 +101,36 @@ class Api:
 
     def clear_avatar(self):
         set_avatar_path(None)
+
+    # ---- 模型 ----
+
+    def get_model_options(self) -> str:
+        return json.dumps(MODEL_OPTIONS, ensure_ascii=False)
+
+    def get_model(self) -> str:
+        return get_llm_model()
+
+    def set_model(self, name: str):
+        set_llm_model(name)
+        for win in webview.windows:
+            if win:
+                api = win._js_api
+                if api and api._llm:
+                    api._llm.refresh()
+                break
+
+    def get_apikey(self) -> str:
+        k = get_llm_api_key()
+        return k[:8] + "••••" + k[-4:] if len(k) > 12 else ""
+
+    def save_apikey(self, key: str):
+        set_llm_api_key(key)
+        for win in webview.windows:
+            if win:
+                api = win._js_api
+                if api and api._llm:
+                    api._llm.refresh()
+                break
 
 
 def _start_tray():
