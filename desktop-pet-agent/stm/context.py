@@ -27,8 +27,10 @@ class SessionContext:
         self._messages.insert(0, {"role": "system", "content": content})
         self._trim()
 
-    def get_messages(self) -> list[dict]:
-        return list(self._messages)
+    def get_messages(self, include_status: bool = False) -> list[dict]:
+        if include_status:
+            return list(self._messages)
+        return [m for m in self._messages if m.get("role") != "status"]
 
     def pop_message(self, index: int = -1) -> dict | None:
         if self._messages:

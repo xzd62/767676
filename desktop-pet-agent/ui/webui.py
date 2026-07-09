@@ -75,7 +75,7 @@ class Api:
             self._agent._setup_system_prompt()
 
     def get_history(self) -> str:
-        msgs = self._stm.get_messages()
+        msgs = self._stm.get_messages(include_status=True)
         return json.dumps(msgs, ensure_ascii=False)
 
     # ---- 对话 ----

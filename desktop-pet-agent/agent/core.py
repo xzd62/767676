@@ -39,9 +39,13 @@ class Agent:
     def process(self, user_input: str) -> str:
         self._stm.add_message(role="user",content=user_input)
         tools = registry.get_schemas()
-        
+        first = True
+
         while True:
-            self._on_status("思考中…")
+            if first:
+                self._on_status("思考中…")
+                self._stm.add_message("status", "思考中…")
+                first = False
             history = self._stm.get_messages()
             reply = self._llm.chat(history, tools)
 
@@ -51,18 +55,36 @@ class Agent:
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
-                    self._on_status(f"调用工具 {name}…")
+                    self._on_status(f"调用工具 {name}")
+                    self._stm.add_message("status", f"调用工具 {name}")
+
+                    if name == "bash":
+                        cmd = f"运行: {args.get('command', '')}"
+                        self._on_status(cmd)
+                        self._stm.add_message("status", cmd)
+
                     obs = registry.dispatch(name, args)
-                    summary = obs.get("content") or obs.get("files") or str(obs)
-                    got = str(summary)[:80] if obs.get("success") else str(obs)
-                    self._on_status(f"工具返回: {got}")
+
+                    if name == "bash":
+                        out = obs.get("output", "")
+                        if out:
+                            self._on_status(out)
+                            self._stm.add_message("status", out)
+                    elif name == "write_file":
+                        wp = f"写入: {args.get('path', '')}"
+                        self._on_status(wp)
+                        self._stm.add_message("status", wp)
+                        wc = args.get("content", "")
+                        if wc:
+                            self._on_status(wc)
+                            self._stm.add_message("status", wc)
+
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
                 continue 
 
             text = reply["content"] or ""
 
-            # 兼容处理：LLM 用 <tool_name>...</tool_name> 文字模拟调工具时，手动解析执行
             import re
             parsed = False
             for tname in ("read_file", "write_file", "glob", "grep", "edit_file", "bash"):
@@ -74,11 +96,26 @@ class Agent:
                         args = json.loads(args_raw) if args_raw.startswith("{") else {"path": args_raw}
                     except json.JSONDecodeError:
                         args = {"path": args_raw}
-                    self._on_status(f"调用工具 {tname}…")
+                    self._on_status(f"调用工具 {tname}")
+                    self._stm.add_message("status", f"调用工具 {tname}")
+                    if tname == "bash":
+                        cmd = f"运行: {args.get('command', '')}"
+                        self._on_status(cmd)
+                        self._stm.add_message("status", cmd)
                     obs = registry.dispatch(tname, args)
-                    summary = obs.get("content") or obs.get("files") or str(obs)
-                    got = str(summary)[:80] if obs.get("success") else str(obs)
-                    self._on_status(f"工具返回: {got}")
+                    if tname == "bash":
+                        out = obs.get("output", "")
+                        if out:
+                            self._on_status(out)
+                            self._stm.add_message("status", out)
+                    elif tname == "write_file":
+                        wp = f"写入: {args.get('path', '')}"
+                        self._on_status(wp)
+                        self._stm.add_message("status", wp)
+                        wc = args.get("content", "")
+                        if wc:
+                            self._on_status(wc)
+                            self._stm.add_message("status", wc)
                     self._stm.add_message("assistant", text)
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tname)
@@ -115,31 +152,29 @@ class Agent:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
                     msg = f"调用工具 {name}"
-                    status(msg)
-                    yield msg
+                    self._on_status(msg); self._stm.add_message("status", msg)
 
                     if name == "bash":
                         cmd = f"运行: {args.get('command', '')}"
-                        status(cmd); yield cmd
+                        self._on_status(cmd); self._stm.add_message("status", cmd)
                     elif name == "write_file":
                         wp = f"写入: {args.get('path', '')}"
-                        status(wp); yield wp
+                        self._on_status(wp); self._stm.add_message("status", wp)
 
                     obs = registry.dispatch(name, args)
 
                     if name == "write_file" and obs.get("success"):
                         done = f"内容已写入: {args.get('path', '')}"
-                        status(done); yield done
+                        self._on_status(done); self._stm.add_message("status", done)
                     elif name == "bash":
                         out = obs.get("output", "")
                         if out:
                             omsg = f"输出: {out[:300]}"
-                            status(omsg); yield omsg
+                            self._on_status(omsg); self._stm.add_message("status", omsg)
 
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
-                next_msg = "思考中…"
-                status(next_msg); yield next_msg
+                self._on_status("思考中…"); self._stm.add_message("status", "思考中…")
                 continue
 
             text = reply["content"] or ""
@@ -156,28 +191,27 @@ class Agent:
                     except json.JSONDecodeError:
                         args = {"path": args_raw}
                     msg = f"调用工具 {tname}"
-                    status(msg); yield msg
+                    self._on_status(msg); self._stm.add_message("status", msg)
                     if tname == "bash":
                         cmd = f"运行: {args.get('command', '')}"
-                        status(cmd); yield cmd
+                        self._on_status(cmd); self._stm.add_message("status", cmd)
                     elif tname == "write_file":
                         wp = f"写入: {args.get('path', '')}"
-                        status(wp); yield wp
+                        self._on_status(wp); self._stm.add_message("status", wp)
                     obs = registry.dispatch(tname, args)
                     if tname == "write_file" and obs.get("success"):
                         done = f"内容已写入: {args.get('path', '')}"
-                        status(done); yield done
+                        self._on_status(done); self._stm.add_message("status", done)
                     elif tname == "bash":
                         out = obs.get("output", "")
                         if out:
                             omsg = f"输出: {out[:300]}"
-                            status(omsg); yield omsg
+                            self._on_status(omsg); self._stm.add_message("status", omsg)
                     self._stm.add_message("assistant", text)
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tname)
                     parsed = True
-                    next_msg = "思考中…"
-                    status(next_msg); yield next_msg
+                    self._on_status("思考中…"); self._stm.add_message("status", "思考中…")
                     break
             if parsed:
                 continue

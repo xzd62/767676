@@ -166,11 +166,6 @@ function onInputKey(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault();
 
 function appendStatus(text) {
   const msgs = document.getElementById('messages');
-  const last = msgs.lastChild;
-  if (last && last.classList.contains('msg-status')) {
-    last.querySelector('.msg-bubble').textContent = text;
-    msgs.scrollTop = msgs.scrollHeight; return;
-  }
   const d = document.createElement('div');
   d.className = 'msg msg-status';
   d.innerHTML = '<div class="msg-bubble" style="color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px">'+esc(text)+'</div>';
@@ -178,7 +173,7 @@ function appendStatus(text) {
 }
 
 function animateReply(text) {
-  document.querySelectorAll('.msg-status').forEach(e=>e.remove());
+  // Don't remove .msg-status - keep them as permanent history
   const msgs = document.getElementById('messages');
   const d = document.createElement('div');
   d.className = 'msg assistant';
@@ -242,7 +237,11 @@ async function switchConv(id) {
   document.querySelectorAll('.nav-conv-item').forEach(e=>{ if(e.textContent.includes(hit?hit.name:'')) e.classList.add('active'); });
   document.getElementById('messages').innerHTML = '';
   const msgs = await pywebview.api.get_history();
-  JSON.parse(msgs).forEach(m=>{ if(m.role!=='system') appendMsg(m.role,m.content||'(工具调用)'); });
+  for (const m of JSON.parse(msgs)) {
+    if (m.role === 'system') continue;
+    if (m.role === 'status') { appendStatus(m.content||''); }
+    else { appendMsg(m.role, m.content||'(工具调用)'); }
+  }
   const chatBtn = document.querySelectorAll('.nav-item')[0];
   switchPage('chat', chatBtn);
 }
