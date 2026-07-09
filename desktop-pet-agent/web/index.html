@@ -5,159 +5,79 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CodePet</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: "Microsoft YaHei","Inter",sans-serif;
-  background: #f5ede0; color: #2c1f14;
-  height: 100vh; display: flex; overflow: hidden;
-}
-
-/* ===== 侧栏 ===== */
-.sidebar {
-  width: 240px; background: #2c1f14; color: #f5ede0;
-  display: flex; flex-direction: column; flex-shrink: 0;
-}
-.sidebar-header {
-  padding: 18px 20px; border-bottom: 1px solid #3d2e1e;
-  display: flex; align-items: center; gap: 8px;
-  font-weight: bold; font-size: 15px;
-}
-.nav { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
-.nav-item {
-  padding: 10px 12px; border-radius: 8px; cursor: pointer;
-  font-size: 13px; color: #a08c78; display: flex; align-items: center; gap: 10px;
-  border: none; background: none; width: 100%; text-align: left; font-family: inherit;
-}
-.nav-item:hover { background: #3d2e1e; color: #f5ede0; }
-.nav-item.active { background: #3d2e1e; color: #f5ede0; font-weight: bold; }
-.nav-item .icon { width: 18px; height: 18px; flex-shrink: 0; }
-.nav-conv-list { margin-left: 28px; margin-top: 4px; }
-.nav-conv-item {
-  padding: 8px 10px; border-radius: 6px; cursor: pointer;
-  font-size: 12px; color: #7a6050; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.nav-conv-item:hover, .nav-conv-item.active { background: #3d2e1e; color: #f5ede0; }
-.nav-conv-item .del { display: none; font-size: 12px; color: #e8783a; cursor: pointer; padding: 0 4px; }
-.nav-conv-item:hover .del { display: block; }
-.nav-conv-item .del:hover { background: #5a3a2a; border-radius: 3px; }
-.sidebar-footer {
-  padding: 14px 16px; border-top: 1px solid #3d2e1e;
-  font-size: 11px; color: #7a6050;
-}
-
-/* ===== 主区域 ===== */
-.main { flex: 1; display: flex; flex-direction: column; }
-.header {
-  padding: 18px 32px; border-bottom: 1px solid #e8d8c4;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.header h2 { font-size: 19px; }
-.page { display: none; flex-direction: column; flex: 1; min-height: 0; }
-.page.active { display: flex; }
-
-/* 按钮 */
-.btn {
-  padding: 7px 14px; border: none; border-radius: 6px;
-  cursor: pointer; font-size: 12px; font-weight: bold; font-family: inherit;
-}
-.btn-primary { background: #e8783a; color: white; }
-.btn-primary:hover { background: #d06a2e; }
-.btn-secondary { background: #ede0d0; color: #2c1f14; }
-.btn-secondary:hover { background: #e0d0bc; }
-
-/* ===== 对话页面 ===== */
-.messages { flex: 1; overflow-y: auto; padding: 20px 32px; min-height: 0; }
-.msg { margin-bottom: 14px; }
-.msg-header { font-size: 12px; color: #a08c78; margin-bottom: 4px; }
-.msg-bubble {
-  padding: 10px 14px; border-radius: 10px;
-  font-size: 14px; line-height: 1.7; white-space: pre-wrap;
-}
-.msg.user { display: flex; flex-direction: column; align-items: flex-end; }
-.msg.user .msg-bubble { background: #e8d8c4; max-width: 80%; }
-.msg.assistant .msg-bubble { background: white; border: 1px solid #e8d8c4; max-width: 90%; }
-.msg.status .msg-bubble {
-  background: transparent; color: #a08c78;
-  font-size: 12px; font-style: italic; padding: 2px 14px;
-}
-.input-area {
-  padding: 14px 32px 20px; border-top: 1px solid #e8d8c4;
-  display: flex; gap: 10px;
-}
-.input-area textarea {
-  flex: 1; padding: 10px 14px; border: 1px solid #e8d8c4;
-  border-radius: 8px; font-size: 14px; font-family: inherit;
-  resize: none; outline: none; background: white;
-}
-.input-area textarea:focus { border-color: #e8783a; }
-.send-btn {
-  width: 44px; height: 44px; border: none; border-radius: 8px;
-  background: #e8783a; color: white; font-size: 18px;
-  cursor: pointer; flex-shrink: 0;
-}
-.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ===== 设置页面 ===== */
-.settings-body { flex: 1; overflow-y: auto; padding: 24px 32px; min-height: 0; }
-.settings-tabs { display: flex; gap: 0; border-bottom: 1px solid #e8d8c4; margin-bottom: 20px; }
-.settings-tab {
-  padding: 8px 20px; cursor: pointer; font-size: 13px;
-  color: #a08c78; border-bottom: 2px solid transparent; background: none; border-top: none;
-  border-left: none; border-right: none; font-family: inherit;
-}
-.settings-tab.active { color: #e8783a; border-bottom-color: #e8783a; }
-.settings-content { display: none; }
-.settings-content.active { display: block; }
-.settings-body textarea {
-  width: 100%; padding: 10px; border: 1px solid #e8d8c4;
-  border-radius: 8px; font-size: 13px; font-family: inherit;
-  resize: vertical; outline: none; min-height: 220px;
-}
-.settings-body textarea:focus { border-color: #e8783a; }
-.avatar-row { display: flex; gap: 16px; align-items: flex-start; }
-.avatar-preview {
-  width: 120px; height: 120px; border-radius: 10px;
-  background: #ede0d0; display: flex; align-items: center;
-  justify-content: center; font-size: 12px; color: #a08c78;
-  overflow: hidden; flex-shrink: 0;
-}
-.avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#2c1f14;height:100vh;display:flex;overflow:hidden}
+.sidebar{width:240px;background:#2c1f14;color:#f5ede0;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:18px 20px;border-bottom:1px solid #3d2e1e;display:flex;align-items:center;gap:8px;font-weight:bold;font-size:15px}
+.nav{flex:1;padding:12px;display:flex;flex-direction:column;gap:2px}
+.nav-item{padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:#a08c78;display:flex;align-items:center;gap:10px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.nav-item:hover,.nav-item.active{background:#3d2e1e;color:#f5ede0;font-weight:bold}
+.nav-item .icon{width:18px;height:18px;flex-shrink:0}
+.nav-conv-list{margin-left:28px;margin-top:4px}
+.nav-conv-item{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:#7a6050;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;justify-content:space-between;align-items:center}
+.nav-conv-item:hover,.nav-conv-item.active{background:#3d2e1e;color:#f5ede0}
+.nav-conv-item .del{display:none;font-size:12px;color:#e8783a;cursor:pointer;padding:0 4px}
+.nav-conv-item:hover .del{display:block}
+.nav-conv-item .del:hover{background:#5a3a2a;border-radius:3px}
+.sidebar-footer{padding:14px 16px;border-top:1px solid #3d2e1e;font-size:11px;color:#7a6050}
+.main{flex:1;display:flex;flex-direction:column}
+.header{padding:18px 32px;border-bottom:1px solid #e8d8c4;display:flex;justify-content:space-between;align-items:center}
+.header h2{font-size:19px}
+.page{display:none;flex-direction:column;flex:1;min-height:0}
+.page.active{display:flex}
+.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;font-family:inherit}
+.btn-primary{background:#e8783a;color:white}
+.btn-primary:hover{background:#d06a2e}
+.btn-secondary{background:#ede0d0;color:#2c1f14}
+.btn-secondary:hover{background:#e0d0bc}
+.messages{flex:1;overflow-y:auto;padding:20px 32px;min-height:0}
+.msg{margin-bottom:14px}
+.msg-header{font-size:12px;color:#a08c78;margin-bottom:4px}
+.msg-bubble{padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap}
+.msg.user{display:flex;flex-direction:column;align-items:flex-end}
+.msg.user .msg-bubble{background:#e8d8c4;max-width:80%}
+.msg.assistant .msg-bubble{background:white;border:1px solid #e8d8c4;max-width:90%}
+.msg.status .msg-bubble{background:transparent;color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px}
+.input-area{padding:14px 32px 20px;border-top:1px solid #e8d8c4;display:flex;gap:10px}
+.input-area textarea{flex:1;padding:10px 14px;border:1px solid #e8d8c4;border-radius:8px;font-size:14px;font-family:inherit;resize:none;outline:none;background:white}
+.input-area textarea:focus{border-color:#e8783a}
+.send-btn{width:44px;height:44px;border:none;border-radius:8px;background:#e8783a;color:white;font-size:18px;cursor:pointer;flex-shrink:0}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.settings-body{flex:1;overflow-y:auto;padding:24px 32px;min-height:0}
+.settings-tabs{display:flex;gap:0;border-bottom:1px solid #e8d8c4;margin-bottom:20px}
+.settings-tab{padding:8px 20px;cursor:pointer;font-size:13px;color:#a08c78;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.settings-tab.active{color:#e8783a;border-bottom-color:#e8783a}
+.settings-content{display:none}
+.settings-content.active{display:block}
+.settings-body textarea{width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;min-height:220px}
+.settings-body textarea:focus{border-color:#e8783a}
+.avatar-row{display:flex;gap:16px;align-items:flex-start}
+.avatar-preview{width:120px;height:120px;border-radius:10px;background:#ede0d0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#a08c78;overflow:hidden;flex-shrink:0}
+.avatar-preview img{width:100%;height:100%;object-fit:cover}
 </style>
 </head>
 <body>
 
-<!-- 侧栏 -->
 <div class="sidebar">
   <div class="sidebar-header">
-    <svg width="22" height="22" viewBox="0 0 22 22">
-      <rect x="3" y="7" width="16" height="12" rx="2" fill="none" stroke="#e8783a" stroke-width="2"/>
-      <circle cx="11" cy="13" r="2" fill="#e8783a"/>
-    </svg>
+    <svg width="22" height="22" viewBox="0 0 22 22"><rect x="3" y="7" width="16" height="12" rx="2" fill="none" stroke="#e8783a" stroke-width="2"/><circle cx="11" cy="13" r="2" fill="#e8783a"/></svg>
     CodePet
   </div>
-
   <div class="nav">
     <button class="nav-item active" onclick="switchPage('chat',this)">
       <svg class="icon" viewBox="0 0 18 18" fill="none"><path d="M3 3h12a1 1 0 011 1v8a1 1 0 01-1 1H6l-3 3V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/></svg>
       对话
     </button>
     <div class="nav-conv-list" id="navConvList"></div>
-
     <button class="nav-item" onclick="switchPage('settings',this)">
       <svg class="icon" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M2.5 2.5l1.5 1.5M14 14l1.5 1.5M2.5 15.5l1.5-1.5M14 4l1.5-1.5" stroke="currentColor" stroke-width="1.5"/></svg>
       设置
     </button>
   </div>
-
   <div class="sidebar-footer">CodePet v0.1.0</div>
 </div>
 
-<!-- 主区域 -->
 <div class="main">
-
-  <!-- 对话页 -->
   <div class="page active" id="pageChat">
     <div class="header">
       <h2 id="convTitle">对话</h2>
@@ -170,11 +90,8 @@ body {
     </div>
   </div>
 
-  <!-- 设置页 -->
   <div class="page" id="pageSettings">
-    <div class="header">
-      <h2>设置</h2>
-    </div>
+    <div class="header"><h2>设置</h2></div>
     <div class="settings-body">
       <div class="settings-tabs">
         <button class="settings-tab active" onclick="switchSettingTab(this,'stSoul')">灵魂</button>
@@ -182,15 +99,11 @@ body {
         <button class="settings-tab" onclick="switchSettingTab(this,'stAvatar')">头像</button>
         <button class="settings-tab" onclick="switchSettingTab(this,'stTts')">语音</button>
       </div>
-
       <div class="settings-content active" id="stSoul">
         <p style="font-size:12px;color:#a08c78;margin-bottom:8px">人格设定。留空=默认性格，修改后需要重启对话生效。</p>
         <textarea id="soulInput"></textarea>
-        <div style="margin-top:12px;text-align:right">
-          <button class="btn btn-primary" onclick="saveSoul()">保存灵魂设定</button>
-        </div>
+        <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveSoul()">保存灵魂设定</button></div>
       </div>
-
       <div class="settings-content" id="stModel">
         <p style="font-size:12px;color:#a08c78;margin-bottom:12px">选择 AI 模型和配置 API 密钥。</p>
         <div style="margin-bottom:16px">
@@ -204,11 +117,8 @@ body {
           <label style="font-size:13px;font-weight:bold;display:block;margin-bottom:6px">API Key</label>
           <input type="password" id="apiKeyInput" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:white">
         </div>
-        <div style="text-align:right">
-          <button class="btn btn-primary" onclick="saveModel()">保存模型设定</button>
-        </div>
+        <div style="text-align:right"><button class="btn btn-primary" onclick="saveModel()">保存模型设定</button></div>
       </div>
-
       <div class="settings-content" id="stAvatar">
         <div class="avatar-row">
           <div class="avatar-preview" id="avatarPreview">未选择</div>
@@ -219,19 +129,16 @@ body {
           </div>
         </div>
       </div>
-
       <div class="settings-content" id="stTts">
         <p style="font-size:12px;color:#a08c78">语音合成功能开发中…</p>
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
-let convs = [], processing = false;
+let convs = [], processing = false, statusTimer = null;
 
-// ---- 页面切换 ----
 function switchPage(name, btn) {
   document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
@@ -240,14 +147,12 @@ function switchPage(name, btn) {
   if (name === 'settings') loadSettings();
 }
 
-// ---- 对话 ----
 function appendMsg(role, content) {
   const el = document.getElementById('messages');
   const d = document.createElement('div'); d.className = 'msg '+role;
   const labels = {user:'你',assistant:'CodePet'};
   const l = labels[role]||'';
-  d.innerHTML = l ? '<div class="msg-header">'+esc(l)+'</div><div class="msg-bubble">'+esc(content)+'</div>'
-                  : '<div class="msg-bubble">'+esc(content)+'</div>';
+  d.innerHTML = l ? '<div class="msg-header">'+esc(l)+'</div><div class="msg-bubble">'+esc(content)+'</div>' : '<div class="msg-bubble">'+esc(content)+'</div>';
   el.appendChild(d); el.scrollTop = el.scrollHeight;
 }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -259,26 +164,67 @@ function setBusy(b) {
 }
 function onInputKey(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } }
 
+function appendStatus(text) {
+  const msgs = document.getElementById('messages');
+  const last = msgs.lastChild;
+  if (last && last.classList.contains('msg-status')) {
+    last.querySelector('.msg-bubble').textContent = text;
+    msgs.scrollTop = msgs.scrollHeight; return;
+  }
+  const d = document.createElement('div');
+  d.className = 'msg msg-status';
+  d.innerHTML = '<div class="msg-bubble" style="color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px">'+esc(text)+'</div>';
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function animateReply(text) {
+  document.querySelectorAll('.msg-status').forEach(e=>e.remove());
+  const msgs = document.getElementById('messages');
+  const d = document.createElement('div');
+  d.className = 'msg assistant';
+  d.innerHTML = '<div class="msg-header">CodePet</div><div class="msg-bubble"></div>';
+  msgs.appendChild(d);
+  const bubble = d.querySelector('.msg-bubble');
+  let i = 0;
+  function tick() {
+    if (i < text.length) {
+      const n = 2 + Math.floor(Math.random() * 4);
+      bubble.textContent += text.slice(i, i + n);
+      i += n;
+      msgs.scrollTop = msgs.scrollHeight;
+      setTimeout(tick, 18 + Math.random() * 25);
+    } else { setBusy(false); }
+  }
+  tick();
+}
+
+async function pollStatus() {
+  const data = await pywebview.api.get_status_updates();
+  for (const item of JSON.parse(data)) {
+    if (item.startsWith('__REPLY__:')) { animateReply(item.slice(9)); return; }
+    if (item.startsWith('__ERROR__:')) { appendStatus('出错了：'+item.slice(9)); setBusy(false); return; }
+    appendStatus(item);
+  }
+}
+
 async function send() {
   if (processing) return;
   const inp = document.getElementById('input');
   const text = inp.value.trim(); if (!text) return;
   inp.value = ''; setBusy(true);
-  appendMsg('user', text); appendMsg('status', '思考中…');
-  try {
-    const reply = await pywebview.api.send(text);
-    const m = document.getElementById('messages');
-    m.removeChild(m.lastChild);
-    appendMsg('assistant', reply||'（无回复）');
-  } catch(e) {
-    const m = document.getElementById('messages');
-    if (m.lastChild) m.removeChild(m.lastChild);
-    appendMsg('status', '出错了：'+e);
-  } finally { setBusy(false); }
+  appendMsg('user', text);
+  appendStatus('思考中…');
+  pywebview.api.start_stream(text);
+  statusTimer = setInterval(() => {
+    if (!processing) { clearInterval(statusTimer); return; }
+    pollStatus();
+  }, 150);
 }
 
 // ---- 会话侧栏 ----
-function renderConvSidebar() {
+async function loadConvs() {
+  const data = await pywebview.api.get_convs();
+  convs = JSON.parse(data);
   const el = document.getElementById('navConvList'); el.innerHTML = '';
   convs.forEach((c,i) => {
     const d = document.createElement('div');
@@ -288,24 +234,15 @@ function renderConvSidebar() {
     el.appendChild(d);
   });
 }
-
-async function loadConvs() {
-  const data = await pywebview.api.get_convs();
-  convs = JSON.parse(data);
-  renderConvSidebar();
-}
 async function switchConv(id) {
   await pywebview.api.switch_conv(id);
   document.querySelectorAll('.nav-conv-item').forEach(e=>e.classList.remove('active'));
   const hit = convs.find(c=>c.id===id);
   if (hit) document.getElementById('convTitle').textContent = hit.name;
-  document.querySelectorAll('.nav-conv-item').forEach(e=>{
-    if (e.textContent.includes(hit?hit.name:'')) e.classList.add('active');
-  });
+  document.querySelectorAll('.nav-conv-item').forEach(e=>{ if(e.textContent.includes(hit?hit.name:'')) e.classList.add('active'); });
   document.getElementById('messages').innerHTML = '';
   const msgs = await pywebview.api.get_history();
   JSON.parse(msgs).forEach(m=>{ if(m.role!=='system') appendMsg(m.role,m.content||'(工具调用)'); });
-  // 切换回对话页
   const chatBtn = document.querySelectorAll('.nav-item')[0];
   switchPage('chat', chatBtn);
 }
@@ -314,29 +251,22 @@ async function newSession() {
   document.getElementById('messages').innerHTML = '';
   document.getElementById('convTitle').textContent = '新对话';
   loadConvs();
-  const chatBtn = document.querySelectorAll('.nav-item')[0];
-  switchPage('chat', chatBtn);
+  switchPage('chat', document.querySelectorAll('.nav-item')[0]);
 }
 async function deleteConv(id) {
   if (!confirm('确定删除该对话？')) return;
   await pywebview.api.delete_conv(id);
   document.getElementById('messages').innerHTML = '';
   loadConvs();
-  const chatBtn = document.querySelectorAll('.nav-item')[0];
-  switchPage('chat', chatBtn);
+  switchPage('chat', document.querySelectorAll('.nav-item')[0]);
 }
 
 // ---- 设置 ----
 async function loadSettings() {
-  const soul = await pywebview.api.get_soul();
-  document.getElementById('soulInput').value = soul;
-  const av = await pywebview.api.get_avatar();
-  updateAvatarPreview(av);
-  // 加载模型
-  const cur = await pywebview.api.get_model();
-  document.getElementById('modelSelect').value = cur;
-  const apikey = await pywebview.api.get_apikey();
-  document.getElementById('apiKeyInput').value = apikey;
+  document.getElementById('soulInput').value = await pywebview.api.get_soul();
+  updateAvatarPreview(await pywebview.api.get_avatar());
+  document.getElementById('modelSelect').value = await pywebview.api.get_model();
+  document.getElementById('apiKeyInput').value = await pywebview.api.get_apikey();
 }
 function switchSettingTab(btn, id) {
   document.querySelectorAll('.settings-tab').forEach(e=>e.classList.remove('active'));
@@ -370,7 +300,6 @@ function updateAvatarPreview(path) {
   else { el.innerHTML = '未选择'; }
 }
 
-// ---- 启动 ----
 window.addEventListener('pywebviewready', async () => {
   await loadConvs();
   if (convs.length > 0) await switchConv(convs[0].id);

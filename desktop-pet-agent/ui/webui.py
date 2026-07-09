@@ -28,14 +28,27 @@ import tool.bash
 class Api:
     def __init__(self):
         self._init_engine()
+        self._status_queue: list[str] = []
 
     def _init_engine(self):
         self._llm = LLMClient()
         self._stm = SessionContext(llm_client=self._llm)
         self._ltm = MemoryStore()
-        self._agent = Agent(llm=self._llm, stm=self._stm, ltm=self._ltm)
+        self._agent = Agent(llm=self._llm, stm=self._stm, ltm=self._ltm,
+                            on_status=self._push_status)
         self._session_mgr = SessionManager()
         self._session_mgr.ensure_session(self._stm)
+
+    def _push_status(self, text: str):
+        self._status_queue.append(text)
+
+    def get_status_updates(self) -> str:
+        """JS 轮询：获取新状态消息。"""
+        if not self._status_queue:
+            return "[]"
+        result = json.dumps(list(self._status_queue), ensure_ascii=False)
+        self._status_queue.clear()
+        return result
 
     # ---- 会话 ----
 
@@ -68,14 +81,43 @@ class Api:
     # ---- 对话 ----
 
     def send(self, text: str) -> str:
+        """同步发送（备用）。"""
+        return self._do_send(text)
+
+    def start_stream(self, text: str):
+        """非阻塞对话：后台跑 process()，前端轮询状态和最终结果。"""
+        self._status_queue.clear()
+        threading.Thread(target=self._stream_worker, args=(text,), daemon=True).start()
+
+    def _stream_worker(self, text: str):
         try:
             reply = self._agent.process(text)
-            conv_id = self._session_mgr.get_current_id()
-            if conv_id:
-                self._session_mgr.save_messages(conv_id, self._stm.get_messages())
+            self._save_conv()
+            self._status_queue.append(f"__REPLY__:{reply}")
+        except Exception as e:
+            self._status_queue.append(f"__ERROR__:{e}")
+
+    def _do_send(self, text: str) -> str:
+        try:
+            reply = self._agent.process(text)
+            self._save_conv()
             return reply
         except Exception as e:
             return f"（出错了：{e}）"
+
+    def _stream_worker(self, text: str):
+        """后台线程：调 process()，结果通过 status_queue 返回（__REPLY__ / __ERROR__）。"""
+        try:
+            reply = self._agent.process(text)
+            self._save_conv()
+            self._status_queue.append(f"__REPLY__:{reply}")
+        except Exception as e:
+            self._status_queue.append(f"__ERROR__:{e}")
+
+    def _save_conv(self):
+        conv_id = self._session_mgr.get_current_id()
+        if conv_id:
+            self._session_mgr.save_messages(conv_id, self._stm.get_messages())
 
     # ---- 设置 ----
 
