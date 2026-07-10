@@ -24,6 +24,7 @@ class Api:
     def __init__(self):
         self._init_engine()
         self._status_queue: list[str] = []
+        self._pending_mood: str = ""
 
     def _init_engine(self):
         self._llm = LLMClient()
@@ -35,7 +36,10 @@ class Api:
         self._session_mgr.ensure_session(self._stm)
 
     def _push_status(self, text: str):
-        self._status_queue.append(text)
+        if text.startswith("__MOOD__:"):
+            self._pending_mood = text[9:]
+        else:
+            self._status_queue.append(text)
 
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
@@ -47,10 +51,27 @@ class Api:
         for item in self._status_queue:
             if item.startswith("__REPLY__:"):
                 self._status_queue.clear()
-                return item[9:]
+                return item[10:]
             if item.startswith("__ERROR__:"):
                 self._status_queue.clear()
-                return f"__ERROR__:{item[9:]}"
+                return f"__ERROR__:{item[10:]}"
+        return ""
+
+    def check_mood(self) -> str:
+        m = self._pending_mood
+        self._pending_mood = ""
+        return m
+
+    def get_mood_image(self, mood: str) -> str:
+        """返回表情图片的 data URL。"""
+        char_dir = Path(__file__).resolve().parent.parent / "character"
+        for name in (mood, "默认"):
+            for ext in ("svg", "png", "jpg", "jpeg"):
+                p = char_dir / f"{name}.{ext}"
+                if p.exists():
+                    raw = p.read_bytes()
+                    mime = "image/svg+xml" if ext == "svg" else f"image/{ext}"
+                    return f"data:{mime};base64,{base64.b64encode(raw).decode()}"
         return ""
 
     def get_convs(self) -> str:
@@ -103,7 +124,14 @@ class Api:
         try:
             reply = self._agent.process(text)
             self._save_conv(conv_id=saved_conv_id)
-            reply = reply.lstrip("：:")
+            reply = reply.lstrip("：:　 \t\n\r")
+            # 提取表情标记 [xxx]
+            import re
+            mood_match = re.search(r"\[(.+?)\]", reply)
+            if mood_match:
+                mood = mood_match.group(1)
+                reply = reply.replace(mood_match.group(0), "", 1).strip()
+                self._pending_mood = mood
             self._status_queue.append(f"__REPLY__:{reply}")
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")

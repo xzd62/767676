@@ -285,6 +285,16 @@ function setPetSize(val) {
   document.getElementById('petSizeInput').value = w;
   pywebview.api.save_pet_size(w);
 }
+function setMood(name) {
+  pywebview.api.get_mood_image(name).then(dataUrl => {
+    if (dataUrl) {
+      document.getElementById('petAvatarSvg').style.display = 'none';
+      const img = document.getElementById('petAvatarImg');
+      img.src = dataUrl;
+      img.style.display = 'block';
+    }
+  });
+}
 async function pickWorkdir() {
   const path = await pywebview.api.pick_workdir();
   document.getElementById('workdirBtn').textContent = '📁 ' + path.split('\\').pop();
@@ -310,7 +320,7 @@ function appendStatus(text) {
   d.className = 'msg msg-status';
   d.innerHTML = '<div class="msg-bubble" style="color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px">'+esc(text)+'</div>';
   msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
-
+  if (text.includes('思考')) setMood('思考');
 }
 
 function animateReply(text) {
@@ -344,11 +354,13 @@ async function pollReply() {
   const reply = await pywebview.api.check_reply();
   if (!reply) return;
   if (reply.startsWith('__ERROR__:')) {
-    appendStatus('出错了：'+reply.slice(9));
+    appendStatus('出错了：'+reply.slice(10));
     setBusy(false);
     clearInterval(statusTimer);
     return;
   }
+  const mood = await pywebview.api.check_mood();
+  if (mood) setMood(mood);
   animateReply(reply);
   clearInterval(statusTimer);
 }
@@ -520,6 +532,7 @@ window.addEventListener('pywebviewready', async () => {
   const ps = await pywebview.api.get_pet_size();
   document.getElementById('petPanel').style.width = ps + 'px';
   document.getElementById('petSizeInput').value = ps;
+  setMood('默认');
   
 });
 </script>

@@ -2,7 +2,7 @@
 
 import json
 
-from config.settings import SYSTEM_PROMPT
+from config.settings import SYSTEM_PROMPT, RESPONSE_PROMPT
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
@@ -22,7 +22,7 @@ class Agent:
 
     def _setup_system_prompt(self):
         memories = self._ltm.load()
-        full_prompt = SYSTEM_PROMPT
+        full_prompt = SYSTEM_PROMPT + "\n\n" + RESPONSE_PROMPT
 
         from config.settings import get_soul
 
