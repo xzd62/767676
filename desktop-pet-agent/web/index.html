@@ -347,7 +347,11 @@ function animateReply(text) {
 async function pollStatus() {
   const data = await pywebview.api.get_status_updates();
   for (const item of JSON.parse(data)) {
-    appendStatus(item);
+    if (item.startsWith('__TEXT__:')) {
+      appendMsg('assistant', item.slice(9));
+    } else {
+      appendStatus(item);
+    }
   }
 }
 async function pollReply() {
