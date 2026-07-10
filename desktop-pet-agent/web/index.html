@@ -108,6 +108,9 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       <button class="btn btn-secondary" onclick="newSession()">+ 新对话</button>
     </div>
     <div class="messages" id="messages"></div>
+    <div style="padding:2px 32px 0;text-align:right;font-size:10px;color:#a08c78">
+      <span id="tokenInfo" onclick="compressNow()" style="cursor:pointer" title="点击手动压缩">—</span>
+    </div>
     <div class="input-area">
       <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="send()">→</button>
@@ -254,6 +257,18 @@ function setBusy(b) {
   document.getElementById('sendBtn').disabled = b;
   document.getElementById('input').disabled = b;
   if (!b) document.getElementById('input').focus();
+  refreshTokenInfo();
+}
+async function refreshTokenInfo() {
+  try {
+    const data = JSON.parse(await pywebview.api.get_token_info());
+    const k = (data.tokens / 1000).toFixed(0);
+    document.getElementById('tokenInfo').textContent = k + 'K (' + data.pct + '%)';
+  } catch(e) {}
+}
+async function compressNow() {
+  await pywebview.api.compress_now();
+  refreshTokenInfo();
 }
 function onInputKey(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } }
 

@@ -61,6 +61,11 @@ class SessionContext:
     # 内部
     # ------------------------------------------------------------------
 
+    def get_token_info(self) -> dict:
+        """返回 token 统计信息。"""
+        total = self.count_tokens()
+        return {"tokens": total, "max": 1000000, "pct": round(total / 10000, 1)}
+
     def _trim(self):
         if not self._tokenizer:
             return

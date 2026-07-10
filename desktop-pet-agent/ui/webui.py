@@ -6,13 +6,7 @@ from pathlib import Path
 import webview
 
 from agent.core import Agent
-from config.settings import (
-    get_soul, set_soul,
-    get_avatar_path, set_avatar_path,
-    get_llm_model, set_llm_model,
-    get_llm_api_key, set_llm_api_key,
-    get_work_dir, set_work_dir,
-)
+from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
@@ -44,14 +38,12 @@ class Api:
         self._status_queue.append(text)
 
     def get_status_updates(self) -> str:
-        """JS 轮询：获取新状态消息。不含 __REPLY__。"""
         items = list(self._status_queue)
         self._status_queue[:] = [x for x in items if x.startswith("__")]
         plain = [x for x in items if not x.startswith("__")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
-        """JS 调用：检查是否有最终回复。"""
         for item in self._status_queue:
             if item.startswith("__REPLY__:"):
                 self._status_queue.clear()
@@ -60,8 +52,6 @@ class Api:
                 self._status_queue.clear()
                 return f"__ERROR__:{item[9:]}"
         return ""
-
-    # ---- 会话 ----
 
     def get_convs(self) -> str:
         convs = self._session_mgr.list_conversations()
@@ -89,7 +79,6 @@ class Api:
         msgs = self._stm.get_messages(include_status=True)
         if msgs:
             return json.dumps(msgs, ensure_ascii=False)
-        # 如果 STM 为空，从 SQLite 同步
         conv_id = self._session_mgr.get_current_id()
         if conv_id:
             msgs = self._session_mgr.load_messages(conv_id)
@@ -97,26 +86,7 @@ class Api:
             return json.dumps(msgs, ensure_ascii=False)
         return "[]"
 
-    # ---- 对话 ----
-
     def send(self, text: str) -> str:
-        """同步发送（备用）。"""
-        return self._do_send(text)
-
-    def start_stream(self, text: str):
-        """非阻塞对话：后台跑 process()，前端轮询状态和最终结果。"""
-        self._status_queue.clear()
-        threading.Thread(target=self._stream_worker, args=(text,), daemon=True).start()
-
-    def _stream_worker(self, text: str):
-        try:
-            reply = self._agent.process(text)
-            self._save_conv()
-            self._status_queue.append(f"__REPLY__:{reply}")
-        except Exception as e:
-            self._status_queue.append(f"__ERROR__:{e}")
-
-    def _do_send(self, text: str) -> str:
         try:
             reply = self._agent.process(text)
             self._save_conv()
@@ -124,25 +94,59 @@ class Api:
         except Exception as e:
             return f"（出错了：{e}）"
 
+    def start_stream(self, text: str):
+        self._status_queue.clear()
+        threading.Thread(target=self._stream_worker, args=(text,), daemon=True).start()
+
     def _stream_worker(self, text: str):
-        """后台线程：调 process()，结果通过 status_queue 返回。"""
         saved_conv_id = self._session_mgr.get_current_id()
         try:
             reply = self._agent.process(text)
             self._save_conv(conv_id=saved_conv_id)
             reply = reply.lstrip("：:")
             self._status_queue.append(f"__REPLY__:{reply}")
+            if reply and self._stm.get_token_info()["pct"] >= 80:
+                self._auto_compress()
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
 
+    def _auto_compress(self):
+        info = self._stm.get_token_info()
+        self._push_status(f"上下文已达 {info['tokens']}K ({info['pct']}%)，正在压缩…")
+        try:
+            msgs = self._stm.get_messages(include_status=True)
+            to_c = [m for m in msgs if m.get("role") != "system"]
+            if not to_c:
+                return
+            text = "\n".join(f"[{m['role']}] {m.get('content','')}" for m in to_c)
+            from ltm.prompts import COMPRESS_PROMPT
+            result = self._llm.chat([
+                {"role": "system", "content": COMPRESS_PROMPT},
+                {"role": "user", "content": text},
+            ])
+            st = result.get("content") or "(压缩完成)"
+            sys_m = [m for m in msgs if m.get("role") == "system"]
+            self._stm.load_messages(sys_m)
+            self._stm.add_message("system", f"[对话摘要] {st}")
+            cid = self._session_mgr.get_current_id()
+            if cid:
+                self._save_conv(conv_id=cid)
+            aft = self._stm.get_token_info()
+            self._push_status(f"压缩完成: {info['tokens']}K -> {aft['tokens']}K")
+        except Exception as e:
+            self._push_status(f"压缩失败: {e}")
 
     def _save_conv(self, conv_id: int = 0):
         cid = conv_id or self._session_mgr.get_current_id()
-        if conv_id:
+        if cid:
             msgs = self._stm.get_messages(include_status=True)
-            self._session_mgr.save_messages(conv_id, msgs)
+            self._session_mgr.save_messages(cid, msgs)
 
-    # ---- 宠物面板 ----
+    def get_token_info(self) -> str:
+        return json.dumps(self._stm.get_token_info())
+
+    def compress_now(self):
+        self._auto_compress()
 
     def save_pet_size(self, size: int):
         from config.settings import _update_env
@@ -151,8 +155,6 @@ class Api:
     def get_pet_size(self) -> int:
         import os
         return int(os.getenv("PET_SIZE", "180"))
-
-    # ---- 工作目录 ----
 
     def get_workdir(self) -> str:
         return str(get_work_dir())
@@ -171,8 +173,6 @@ class Api:
     def rename_conv(self, conv_id: int, name: str):
         self._session_mgr.rename_conversation(conv_id, name)
 
-    # ---- 设置 ----
-
     def get_soul(self) -> str:
         return get_soul()
 
@@ -186,7 +186,6 @@ class Api:
         set_avatar_path(path)
 
     def save_avatar_data(self, data_url: str):
-        """保存 base64 图片数据到 character/ 目录。"""
         import re
         match = re.match(r"data:image/(\w+);base64,(.+)", data_url)
         if not match:
@@ -198,10 +197,8 @@ class Api:
         save_path = save_dir / f"default.{ext}"
         save_path.write_bytes(raw)
         set_avatar_path(str(save_path))
-        return str(save_path)
 
     def get_avatar_data(self) -> str:
-        """返回头像图片的 base64 data URL。"""
         path = get_avatar_path()
         if not path or not Path(path).exists():
             return ""
@@ -211,8 +208,6 @@ class Api:
 
     def clear_avatar(self):
         set_avatar_path(None)
-
-    # ---- 模型 ----
 
     def get_model(self) -> str:
         return get_llm_model()
@@ -256,8 +251,6 @@ def _quit():
 def run():
     srcdir = Path(__file__).resolve().parent.parent / "web"
     set_work_dir(srcdir.parent)
-
-    threading.Thread(target=_start_tray, daemon=True).start()
 
     webview.create_window(
         "CodePet",
