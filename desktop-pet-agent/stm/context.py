@@ -8,7 +8,7 @@ class SessionContext:
     不关心消息内容，只做容器和边界管理。
     """
 
-    def __init__(self, llm_client: LLMClient | None = None, max_tokens: int = 4096):
+    def __init__(self, llm_client: LLMClient | None = None, max_tokens: int = 0):
         self._messages: list[dict] = []
         self._max_tokens = max_tokens
         self._tokenizer = llm_client.count_tokens if llm_client else None
@@ -96,7 +96,7 @@ class SessionContext:
         return {"tokens": total, "max": 1000000, "pct": round(total / 10000, 1)}
 
     def _trim(self):
-        if not self._tokenizer:
+        if not self._tokenizer or self._max_tokens <= 0:
             return
         while self._messages and self.count_tokens() > self._max_tokens:
             idx = 1 if (len(self._messages) > 1 and self._messages[0].get("role") == "system") else 0

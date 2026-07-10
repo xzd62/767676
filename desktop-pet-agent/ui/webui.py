@@ -105,36 +105,8 @@ class Api:
             self._save_conv(conv_id=saved_conv_id)
             reply = reply.lstrip("：:")
             self._status_queue.append(f"__REPLY__:{reply}")
-            if reply and self._stm.get_token_info()["pct"] >= 80:
-                self._auto_compress()
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
-
-    def _auto_compress(self):
-        info = self._stm.get_token_info()
-        self._push_status(f"上下文已达 {info['tokens']}K ({info['pct']}%)，正在压缩…")
-        try:
-            msgs = self._stm.get_messages(include_status=True)
-            to_c = [m for m in msgs if m.get("role") != "system"]
-            if not to_c:
-                return
-            text = "\n".join(f"[{m['role']}] {m.get('content','')}" for m in to_c)
-            from ltm.prompts import COMPRESS_PROMPT
-            result = self._llm.chat([
-                {"role": "system", "content": COMPRESS_PROMPT},
-                {"role": "user", "content": text},
-            ])
-            st = result.get("content") or "(压缩完成)"
-            sys_m = [m for m in msgs if m.get("role") == "system"]
-            self._stm.load_messages(sys_m)
-            self._stm.add_message("system", f"[对话摘要] {st}")
-            cid = self._session_mgr.get_current_id()
-            if cid:
-                self._save_conv(conv_id=cid)
-            aft = self._stm.get_token_info()
-            self._push_status(f"压缩完成: {info['tokens']}K -> {aft['tokens']}K")
-        except Exception as e:
-            self._push_status(f"压缩失败: {e}")
 
     def _save_conv(self, conv_id: int = 0):
         cid = conv_id or self._session_mgr.get_current_id()
@@ -142,11 +114,6 @@ class Api:
             msgs = self._stm.get_messages(include_status=True)
             self._session_mgr.save_messages(cid, msgs)
 
-    def get_token_info(self) -> str:
-        return json.dumps(self._stm.get_token_info())
-
-    def compress_now(self):
-        self._auto_compress()
 
     def save_pet_size(self, size: int):
         from config.settings import _update_env
@@ -260,7 +227,7 @@ def run():
         resizable=True,
         js_api=Api(),
     )
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 
 if __name__ == "__main__":
