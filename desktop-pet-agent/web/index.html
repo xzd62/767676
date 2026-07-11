@@ -172,7 +172,14 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
         <p style="font-size:12px;color:#a08c78">语音合成功能开发中…</p>
       </div>
       <div class="settings-content" id="stRule">
-        <p style="font-size:12px;color:#a08c78">规则系统开发中…</p>
+        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">自定义规则（AGENTS.md），加载进上下文后 LLM 会遵循。</p>
+        <div id="ruleCreate" style="text-align:center;padding:40px 0">
+          <button class="btn btn-primary" onclick="createRules()">创建 AGENTS.md 文件</button>
+        </div>
+        <div id="ruleEditor" style="display:none">
+          <textarea id="rulesInput"></textarea>
+          <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveRules()">保存规则</button></div>
+        </div>
       </div>
     </div>
   </div>
@@ -420,8 +427,18 @@ async function switchConv(id) {
         appendMsg('assistant', m.content.slice(9));
       } else {
         appendStatus(m.content||'');
-      }
-    }
+  }
+  // 加载规则
+  const hasRules = await pywebview.api.rules_exist();
+  if (hasRules) {
+    document.getElementById('ruleCreate').style.display = 'none';
+    document.getElementById('ruleEditor').style.display = 'block';
+    document.getElementById('rulesInput').value = await pywebview.api.get_rules();
+  } else {
+    document.getElementById('ruleCreate').style.display = 'block';
+    document.getElementById('ruleEditor').style.display = 'none';
+  }
+}
   }
   const chatBtn = document.querySelectorAll('.nav-item')[0];
   switchPage('chat', chatBtn);
@@ -468,6 +485,17 @@ async function saveSoul() {
   const text = document.getElementById('soulInput').value.trim();
   await pywebview.api.save_soul(text);
   alert('灵魂设定已保存，重启对话后生效。');
+}
+async function createRules() {
+  await pywebview.api.create_rules();
+  document.getElementById('ruleCreate').style.display = 'none';
+  document.getElementById('ruleEditor').style.display = 'block';
+  document.getElementById('rulesInput').value = await pywebview.api.get_rules();
+}
+async function saveRules() {
+  const text = document.getElementById('rulesInput').value.trim();
+  await pywebview.api.save_rules(text);
+  alert('规则已保存，重启对话后生效。');
 }
 async function saveModel() {
   const model = document.getElementById('modelSelect').value;

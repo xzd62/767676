@@ -24,7 +24,11 @@ class Agent:
         memories = self._ltm.load()
         full_prompt = SYSTEM_PROMPT + "\n\n" + RESPONSE_PROMPT
 
-        from config.settings import get_soul
+        from config.settings import get_soul, get_rules
+
+        rules = get_rules()
+        if rules:
+            full_prompt += f"\n\n## 用户规则\n{rules}"
 
         soul = get_soul()
         if soul:

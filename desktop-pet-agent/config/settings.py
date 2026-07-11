@@ -47,6 +47,23 @@ RESPONSE_PROMPT = f"回复前请加上[...]，“[]”里填写的是准确的�
 
 LTM_SUMMARIZE_INTERVAL = 10
 
+# 用户规则 (AGENTS.md)
+_RULES_PATH = Path(__file__).resolve().parent.parent / "AGENTS.md"
+
+
+def get_rules() -> str:
+    if _RULES_PATH.exists():
+        return _RULES_PATH.read_text(encoding="utf-8").strip()
+    return ""
+
+
+def set_rules(text: str):
+    _RULES_PATH.write_text(text.strip(), encoding="utf-8")
+
+
+def rules_exist() -> bool:
+    return _RULES_PATH.exists()
+
 # 工作目录（可运行时修改）
 _work_dir_env = os.getenv("WORK_DIR", "")
 _work_dir = Path(_work_dir_env) if _work_dir_env else Path.cwd()

@@ -6,7 +6,7 @@ from pathlib import Path
 import webview
 
 from agent.core import Agent
-from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir
+from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
@@ -173,6 +173,21 @@ class Api:
 
     def save_soul(self, text: str):
         set_soul(text)
+
+    def get_rules(self) -> str:
+        return get_rules()
+
+    def save_rules(self, text: str):
+        set_rules(text)
+        self._agent._setup_system_prompt()
+
+    def rules_exist(self) -> bool:
+        return rules_exist()
+
+    def create_rules(self):
+        """创建默认规则文件。"""
+        default = "# CodePet 用户规则\n\n在此编写你的自定义规则。\n"
+        set_rules(default)
 
     def get_avatar(self) -> str:
         return get_avatar_path() or ""
