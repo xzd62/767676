@@ -129,9 +129,7 @@ class Api:
             import re
             mood_match = re.search(r"\[(.+?)\]", reply)
             if mood_match:
-                mood = mood_match.group(1)
-                reply = reply.replace(mood_match.group(0), "", 1).strip()
-                self._pending_mood = mood
+                self._pending_mood = mood_match.group(1)
             self._status_queue.append(f"__REPLY__:{reply}")
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
