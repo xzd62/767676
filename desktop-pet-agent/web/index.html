@@ -223,7 +223,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 </div>
 
 <script>
-let convs = [], processing = false, statusTimer = null, streamBuffer = '';
+let convs = [], processing = false, statusTimer = null;
 
 function switchPage(name, btn) {
   document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
@@ -446,10 +446,7 @@ async function switchConv(id) {
     document.getElementById('ruleCreate').style.display = 'block';
     document.getElementById('ruleEditor').style.display = 'none';
   }
-}
   }
-  const chatBtn = document.querySelectorAll('.nav-item')[0];
-  switchPage('chat', chatBtn);
 }
 async function newSession() {
   if (processing) return;
