@@ -34,6 +34,10 @@ class Agent:
         if soul:
             full_prompt += f"\n\n## 桌宠灵魂\n{soul}"
 
+        from skill.registry import get_registry
+        skills_prompt = get_registry().get_active_prompt()
+        if skills_prompt:
+            full_prompt += f"\n\n{skills_prompt}"
 
         if memories:
             full_prompt += f"\n\n## 长期记忆\n{memories}"
