@@ -6,7 +6,7 @@ from pathlib import Path
 import webview
 
 from agent.core import Agent
-from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist
+from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist, add_mcp_server
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
@@ -135,16 +135,6 @@ class Api:
             self._status_queue.append(f"__REPLY__:{reply}")
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
-            self._save_conv(conv_id=saved_conv_id)
-            reply = reply.lstrip("：:　 \t\n\r")
-            # 提取表情标记 [xxx]
-            import re
-            mood_match = re.search(r"\[(.+?)\]", reply)
-            if mood_match:
-                self._pending_mood = mood_match.group(1)
-            self._status_queue.append(f"__REPLY__:{reply}")
-        except Exception as e:
-            self._status_queue.append(f"__ERROR__:{e}")
 
     def _save_conv(self, conv_id: int = 0):
         cid = conv_id or self._session_mgr.get_current_id()
@@ -253,6 +243,25 @@ class Api:
                 if api and api._llm:
                     api._llm.refresh()
                 break
+
+    def get_mcp_status(self) -> str:
+        import tool.mcp_client
+        return json.dumps(tool.mcp_client.get_status(), ensure_ascii=False)
+
+    def remove_mcp_server(self, name: str):
+        import tool.mcp_client
+        tool.mcp_client.remove(name)
+
+    def reconnect_mcp_server(self, name: str) -> bool:
+        import tool.mcp_client
+        return tool.mcp_client.reconnect(name)
+
+    def add_mcp_server(self, name: str, command: str, args: str):
+        import json
+        args_list = json.loads(args) if args else []
+        add_mcp_server(name, command, args_list)
+        import tool.mcp_client
+        tool.mcp_client.init()
 
 
 def _start_tray():

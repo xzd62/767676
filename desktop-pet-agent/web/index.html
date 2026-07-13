@@ -75,6 +75,20 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .avatar-row{display:flex;gap:16px;align-items:flex-start}
 .avatar-preview{width:120px;height:120px;border-radius:10px;background:#ede0d0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#a08c78;overflow:hidden;flex-shrink:0}
 .avatar-preview img{width:100%;height:100%;object-fit:cover}
+
+/* MCP 页面 */
+.mcp-card{border:1px solid #e8d8c4;border-radius:10px;padding:16px;margin-bottom:12px;background:white}
+.mcp-card-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mcp-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mcp-status-dot.ok{background:#4caf50}
+.mcp-status-dot.err{background:#e8783a}
+.mcp-card-name{font-weight:bold;font-size:14px;flex:1}
+.mcp-card-actions{display:flex;gap:6px}
+.mcp-card-cmd{font-size:11px;color:#a08c78;margin-bottom:8px;font-family:monospace}
+.mcp-card-tools{display:flex;flex-wrap:wrap;gap:4px}
+.mcp-tool-tag{font-size:11px;padding:2px 8px;background:#f0e8d8;border-radius:4px;color:#5a4030}
+.mcp-add-card{border:2px dashed #d0c0a8;border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:#a08c78;background:transparent;transition:all 0.2s}
+.mcp-add-card:hover{border-color:#e8783a;color:#e8783a;background:#faf0e4}
 </style>
 </head>
 <body>
@@ -91,6 +105,10 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       对话
     </button>
     <div class="nav-conv-list" id="navConvList"></div>
+    <button class="nav-item" onclick="switchPage('mcp',this)">
+      <svg class="icon" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="14" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="6" width="6" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M5 8v3" stroke="currentColor" stroke-width="1.5"/><path d="M13 10v3" stroke="currentColor" stroke-width="1.5"/></svg>
+      MCP
+    </button>
     <button class="nav-item" onclick="switchPage('settings',this)">
       <svg class="icon" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M2.5 2.5l1.5 1.5M14 14l1.5 1.5M2.5 15.5l1.5-1.5M14 4l1.5-1.5" stroke="currentColor" stroke-width="1.5"/></svg>
       设置
@@ -111,6 +129,32 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     <div class="input-area">
       <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="send()">→</button>
+    </div>
+  </div>
+
+  <div class="page" id="pageMcp">
+    <div class="header"><h2>MCP 服务</h2></div>
+    <div class="settings-body">
+      <div id="mcpList"></div>
+      <div class="mcp-add-card" onclick="showAddMcp()">+ 添加 MCP 服务</div>
+    </div>
+    <div id="mcpAddForm" style="display:none;padding:0 32px 20px;border-top:1px solid #e8d8c4">
+      <div style="display:flex;gap:8px;margin-top:16px;align-items:flex-end">
+        <div style="flex:2">
+          <label style="font-size:12px;color:#a08c78;display:block;margin-bottom:4px">名称</label>
+          <input type="text" id="mcpAddName" style="width:100%;padding:8px;border:1px solid #e8d8c4;border-radius:6px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div style="flex:3">
+          <label style="font-size:12px;color:#a08c78;display:block;margin-bottom:4px">命令</label>
+          <input type="text" id="mcpAddCmd" style="width:100%;padding:8px;border:1px solid #e8d8c4;border-radius:6px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div style="flex:2">
+          <label style="font-size:12px;color:#a08c78;display:block;margin-bottom:4px">参数 (JSON 数组)</label>
+          <input type="text" id="mcpAddArgs" value='["serve","--mcp"]' style="width:100%;padding:8px;border:1px solid #e8d8c4;border-radius:6px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <button class="btn btn-primary" onclick="doAddMcp()">添加</button>
+        <button class="btn btn-secondary" onclick="cancelAddMcp()">取消</button>
+      </div>
     </div>
   </div>
 
@@ -231,6 +275,7 @@ function switchPage(name, btn) {
   btn.classList.add('active');
   document.getElementById('page'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
   if (name === 'settings') loadSettings();
+  if (name === 'mcp') loadMcpStatus();
 }
 
 function appendMsg(role, content) {
@@ -562,6 +607,58 @@ function showDefaultAvatar() {
       <polygon points="38,42 42,42 40,46" fill="#FF6B6B"/>
       <path d="M34,46 Q38,50 40,46 Q42,50 46,46" fill="none" stroke="#555" stroke-width="1.5"/>
     </svg>`;
+}
+
+// ---- MCP ----
+async function loadMcpStatus() {
+  const data = JSON.parse(await pywebview.api.get_mcp_status());
+  const el = document.getElementById('mcpList'); el.innerHTML = '';
+  for (const s of data) {
+    const dot = s.status === 'connected' ? 'ok' : 'err';
+    const actions = s.status === 'connected'
+      ? '<button class="btn btn-secondary" onclick="removeMcp(\''+s.name+'\')">断开</button>'
+      : '<button class="btn btn-primary" onclick="reconnectMcp(\''+s.name+'\')">重连</button><button class="btn btn-secondary" onclick="removeMcp(\''+s.name+'\')" style="margin-left:4px">删除</button>';
+    const tools = s.tools.map(t => '<span class="mcp-tool-tag">'+esc(t)+'</span>').join('');
+    const cmd = s.command + ' ' + (s.args||[]).join(' ');
+    const errRow = s.error ? '<div style="font-size:12px;color:#e8783a;margin-bottom:6px">'+esc(s.error)+'</div>' : '';
+    el.innerHTML += '<div class="mcp-card">' +
+      '<div class="mcp-card-head">' +
+        '<div class="mcp-status-dot '+dot+'"></div>' +
+        '<span class="mcp-card-name">'+esc(s.name)+'</span>' +
+        '<span style="font-size:11px;color:#a08c78">'+s.tools.length+' 个工具</span>' +
+        '<div class="mcp-card-actions">'+actions+'</div>' +
+      '</div>' +
+      '<div class="mcp-card-cmd">'+esc(cmd)+'</div>' +
+      errRow +
+      '<div class="mcp-card-tools">'+tools+'</div>' +
+    '</div>';
+  }
+}
+async function removeMcp(name) {
+  if (!confirm('断开并删除 "'+name+'" ？')) return;
+  await pywebview.api.remove_mcp_server(name);
+  loadMcpStatus();
+}
+async function reconnectMcp(name) {
+  const ok = await pywebview.api.reconnect_mcp_server(name);
+  loadMcpStatus();
+}
+function showAddMcp() {
+  document.getElementById('mcpAddForm').style.display = 'block';
+  document.getElementById('mcpAddName').value = '';
+  document.getElementById('mcpAddCmd').value = '';
+}
+function cancelAddMcp() {
+  document.getElementById('mcpAddForm').style.display = 'none';
+}
+async function doAddMcp() {
+  const name = document.getElementById('mcpAddName').value.trim();
+  const cmd = document.getElementById('mcpAddCmd').value.trim();
+  const args = document.getElementById('mcpAddArgs').value.trim();
+  if (!name || !cmd) { alert('名称和命令不能为空'); return; }
+  await pywebview.api.add_mcp_server(name, cmd, args);
+  document.getElementById('mcpAddForm').style.display = 'none';
+  loadMcpStatus();
 }
 
 window.addEventListener('pywebviewready', async () => {

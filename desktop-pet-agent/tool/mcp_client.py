@@ -24,10 +24,27 @@ def _run_async(coro):
 
 
 class _Connection:
-    def __init__(self, streams_cm, session_cm, session):
+    def __init__(self, streams_cm, session_cm, session, name, command, args, env, tools):
         self._streams_cm = streams_cm
         self._session_cm = session_cm
         self.session = session
+        self.name = name
+        self.command = command
+        self.args = args
+        self.env = env
+        self.tool_names = [f"{name}_{t.name}" for t in tools]
+        self.status = "connected"
+        self.error = ""
+
+    async def close(self):
+        try:
+            await self._session_cm.__aexit__(None, None, None)
+        except Exception:
+            pass
+        try:
+            await self._streams_cm.__aexit__(None, None, None)
+        except Exception:
+            pass
 
 
 _connections: list = []
@@ -43,16 +60,22 @@ def init():
         args = cfg.get("args", [])
         env = cfg.get("env", {})
 
-        try:
-            conn, tools = _connect_to_server(name, command, args, env)
-            _connections.append(conn)
-            _register_tools(name, conn.session, tools)
-        except Exception as e:
-            print(f"[MCP] 连接 '{name}' 失败: {e}")
+        _connect_one(name, command, args, env)
 
 
-def _connect_to_server(name: str, command: str, args: list[str],
-                       env: dict[str, str]):
+def _connect_one(name, command, args, env):
+    try:
+        conn, tools = _connect_to_server(name, command, args, env)
+        _connections.append(conn)
+        _register_tools(name, conn.session, tools)
+    except Exception as e:
+        conn = _Connection(None, None, None, name, command, args, [], [])
+        conn.status = "error"
+        conn.error = str(e)
+        _connections.append(conn)
+
+
+def _connect_to_server(name, command, args, env):
     async def _connect_inner():
         params = StdioServerParameters(
             command=command,
@@ -70,7 +93,7 @@ def _connect_to_server(name: str, command: str, args: list[str],
 
         result = await session.list_tools()
 
-        return _Connection(streams_cm, session_cm, session), result.tools
+        return _Connection(streams_cm, session_cm, session, name, command, args, env, result.tools), result.tools
 
     return _run_async(_connect_inner())
 
@@ -83,8 +106,7 @@ def _mcp_schema_to_our_schema(tool) -> dict:
     }
 
 
-def _register_tools(server_name: str, session, tools):
-    """把 MCP Server 的工具注册到全局 ToolRegistry。"""
+def _register_tools(server_name, session, tools):
     for tool in tools:
         prefixed = f"{server_name}_{tool.name}"
         schema = _mcp_schema_to_our_schema(tool)
@@ -110,11 +132,60 @@ def _register_tools(server_name: str, session, tools):
             handler=make_handler(),
             schema=schema,
         )
-        print(f"[MCP] 注册工具: {prefixed} (来自 {server_name})")
+
+
+def _unregister_tools(server_name):
+    names = [k for k in registry._tools if k.startswith(f"{server_name}_")]
+    for n in names:
+        del registry._tools[n]
+
+
+def get_status():
+    result = []
+    for conn in _connections:
+        result.append({
+            "name": conn.name,
+            "status": conn.status,
+            "error": conn.error,
+            "tools": list(conn.tool_names),
+            "command": conn.command,
+            "args": conn.args,
+        })
+    return result
+
+
+def reconnect(name):
+    conn = next((c for c in _connections if c.name == name), None)
+    if conn and conn.status == "connected":
+        return True
+    _connections[:] = [c for c in _connections if c.name != name]
+    _unregister_tools(name)
+    cfg = _find_config(name)
+    if cfg:
+        _connect_one(name, cfg["command"], cfg["args"], cfg.get("env", {}))
+    return any(c.name == name and c.status == "connected" for c in _connections)
+
+
+def remove(name):
+    conn = next((c for c in _connections if c.name == name), None)
+    if conn and conn.status == "connected":
+        _run_async(conn.close())
+    _connections[:] = [c for c in _connections if c.name != name]
+    _unregister_tools(name)
+    from config.settings import remove_mcp_server
+    remove_mcp_server(name)
+
+
+def _find_config(name):
+    from config.settings import get_mcp_servers
+    for s in get_mcp_servers():
+        if s.get("name") == name:
+            return s
+    return None
 
 
 def shutdown():
     for conn in _connections:
-        anyio.run(conn.close)
+        if conn.status == "connected":
+            _run_async(conn.close())
     _connections.clear()
-    print("[MCP] 所有连接已关闭")

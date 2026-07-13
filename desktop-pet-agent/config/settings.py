@@ -159,6 +159,27 @@ def get_mcp_servers() -> list[dict]:
     return []
 
 
+def add_mcp_server(name: str, command: str, args: list[str], env: dict | None = None):
+    import json
+    servers = get_mcp_servers()
+    servers = [s for s in servers if s.get("name") != name]
+    servers.append({"name": name, "command": command, "args": args, "env": env or {}})
+    _MCP_CONFIG_PATH.write_text(
+        json.dumps({"servers": servers}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def remove_mcp_server(name: str):
+    import json
+    servers = get_mcp_servers()
+    servers = [s for s in servers if s.get("name") != name]
+    _MCP_CONFIG_PATH.write_text(
+        json.dumps({"servers": servers}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
 _ENV_PATH = Path(__file__).resolve().parent.parent / "settings.env"
 
 
