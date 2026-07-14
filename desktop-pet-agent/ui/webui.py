@@ -44,7 +44,7 @@ class Api:
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
         self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:")]
-        plain = [x for x in items if not x.startswith("__")]
+        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
