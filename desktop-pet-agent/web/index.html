@@ -58,7 +58,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .msg.user{display:flex;flex-direction:column;align-items:flex-end}
 .msg.user .msg-bubble{background:#e8d8c4;max-width:80%}
 .msg.assistant .msg-bubble{background:white;border:1px solid #e8d8c4;max-width:90%}
-.msg.status .msg-bubble{background:transparent;color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px}
+.msg.msg-status .msg-bubble{background:transparent;color:#a08c78;font-size:12px;font-style:italic;padding:2px 14px}
 .input-area{padding:14px 32px 20px;border-top:1px solid #e8d8c4;display:flex;gap:10px}
 .input-area textarea{flex:1;padding:10px 14px;border:1px solid #e8d8c4;border-radius:8px;font-size:14px;font-family:inherit;resize:none;outline:none;background:white}
 .input-area textarea:focus{border-color:#e8783a}
@@ -172,7 +172,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     <div class="messages" id="messages"></div>
     <div class="input-area">
       <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="send()">→</button>
+      <button class="send-btn" id="sendBtn" onclick="onSendClick()">→</button>
     </div>
     <div class="mode-bar" id="modeBar" onclick="toggleMode()" title="点击或按 Tab 切换模式">
       <span class="mode-dot" id="modeDot"></span>
@@ -405,13 +405,19 @@ function copyText(btn, text) {
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function setBusy(b) {
   processing = b;
-  document.getElementById('sendBtn').disabled = b;
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = false;
+  btn.textContent = b ? '⏹' : '→';
   document.getElementById('input').disabled = b;
-  if (!b) document.getElementById('input').focus();
+  if (!b) { document.getElementById('input').focus(); }
+}
+function onSendClick() {
+  if (processing) { pywebview.api.interrupt(); return; }
+  send();
 }
 function onInputKey(e) {
   if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); return; }
-  if (e.key==='Tab') { e.preventDefault(); toggleMode(); }
+  if (e.key==='Tab') { e.preventDefault(); if (document.getElementById('pageChat').classList.contains('active')) toggleMode(); }
 }
 
 function updatePetAvatar(src) {
@@ -479,8 +485,8 @@ function appendStatus(text) {
   msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
 }
 
+let _typingTimer = null;
 function animateReply(text) {
-  // Don't remove .msg-status - keep them as permanent history
   const msgs = document.getElementById('messages');
   const d = document.createElement('div');
   d.className = 'msg assistant';
@@ -494,10 +500,14 @@ function animateReply(text) {
       bubble.textContent += text.slice(i, i + n);
       i += n;
       msgs.scrollTop = msgs.scrollHeight;
-      setTimeout(tick, 18 + Math.random() * 25);
-    } else { setBusy(false); }
+      _typingTimer = setTimeout(tick, 18 + Math.random() * 25);
+    } else { setBusy(false); _typingTimer = null; }
   }
   tick();
+}
+function stopTyping() {
+  if (_typingTimer) { clearTimeout(_typingTimer); _typingTimer = null; }
+  setBusy(false);
 }
 
 async function pollStatus() {
@@ -522,9 +532,9 @@ async function pollReply() {
     return;
   }
   if (reply === '__INTERRUPTED__') {
-    appendStatus('已中断');
-    setBusy(false);
+    stopTyping();
     clearInterval(statusTimer);
+    appendStatus('已中断');
     return;
   }
   const mood = await pywebview.api.check_mood();

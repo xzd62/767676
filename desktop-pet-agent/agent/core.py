@@ -2,6 +2,11 @@
 
 import json
 
+
+class CancelledError(Exception):
+    """Agent 处理被用户中断时抛出。"""
+    pass
+
 from config.settings import SYSTEM_PROMPT, RESPONSE_PROMPT
 from llm.client import LLMClient
 from ltm.store import MemoryStore
@@ -22,6 +27,7 @@ class Agent:
         self._on_status = on_status or (lambda msg: None)
         from config.settings import get_agent_mode
         self._mode = get_agent_mode()
+        self._cancelled = False
         self._setup_system_prompt()
 
     def _setup_system_prompt(self):
@@ -62,7 +68,12 @@ class Agent:
         self._mode = mode
         set_agent_mode(mode)
         self._setup_system_prompt()
+    
+    def cancel(self):
+        self._cancelled = True
+
     def process(self, user_input: str) -> str:
+        self._cancelled = False
         self._stm.add_message(role="user",content=user_input)
         all_tools = registry.get_schemas()
         if self._mode == "plan":
@@ -72,13 +83,26 @@ class Agent:
             tools = all_tools
         first = True
 
+        if self._cancelled:
+            raise CancelledError
+        
         while True:
+            if self._cancelled:
+                raise CancelledError
+            
             if first:
                 self._on_status("思考中…")
                 self._stm.add_message("status", "思考中…")
                 first = False
+            
+            if self._cancelled:
+                raise CancelledError
+            
             history = self._stm.get_messages()
             reply = self._llm.chat(history, tools)
+
+            if self._cancelled:
+                raise CancelledError
 
             if reply.get("tool_calls"):
                 content = reply.get("content")
@@ -138,8 +162,6 @@ class Agent:
                                 obs["verify_error"] = vr.get("error", "")
                                 self._on_status(f"语法错误: {vr.get('error', '')}")
                                 self._stm.add_message("status", f"语法错误: {vr.get('error', '')}")
-
-
                     elif name == "glob":
                         cnt = len(obs.get("files", []))
                         self._on_status(f"({cnt}个匹配)")
@@ -151,6 +173,8 @@ class Agent:
 
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
+                    if self._cancelled:
+                        raise CancelledError
                 continue 
 
             text = reply["content"] or ""
@@ -178,6 +202,8 @@ class Agent:
                         self._on_status(cmd)
                         self._stm.add_message("status", cmd)
                     obs = registry.dispatch(tname, args)
+                    if self._cancelled:
+                        raise CancelledError
                     if tname == "bash":
                         out = obs.get("output", "")
                         if out:

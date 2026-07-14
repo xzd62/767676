@@ -5,7 +5,7 @@ from pathlib import Path
 
 import webview
 
-from agent.core import Agent
+from agent.core import Agent, CancelledError
 from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist, add_mcp_server
 from llm.client import LLMClient
 from ltm.store import MemoryStore
@@ -43,20 +43,20 @@ class Api:
 
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
-        self._status_queue[:] = [x for x in items if x.startswith("__")]
+        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:")]
         plain = [x for x in items if not x.startswith("__")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
-        for item in self._status_queue:
+        for i, item in enumerate(self._status_queue):
             if item.startswith("__REPLY__:"):
-                self._status_queue.clear()
+                self._status_queue.pop(i)
                 return item[10:]
             if item == "__INTERRUPTED__":
-                self._status_queue.clear()
+                self._status_queue.pop(i)
                 return item
             if item.startswith("__ERROR__:"):
-                self._status_queue.clear()
+                self._status_queue.pop(i)
                 return f"__ERROR__:{item[10:]}"
         return ""
 
@@ -133,8 +133,15 @@ class Api:
             if mm:
                 self._pending_mood = mm.group(1).strip("：:")
             self._status_queue.append(f"__REPLY__:{reply}")
+        except CancelledError:
+            self._stm.add_message("status", "已中断")
+            self._save_conv(conv_id=saved_conv_id)
+            self._status_queue.append("__INTERRUPTED__")
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
+
+    def interrupt(self):
+        self._agent.cancel()
 
     def _save_conv(self, conv_id: int = 0):
         cid = conv_id or self._session_mgr.get_current_id()

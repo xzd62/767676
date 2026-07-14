@@ -35,6 +35,10 @@ def read_file_handler(args):
     if work_dir not in resolved.parents and resolved != work_dir:
         return {"success": False, "error": "不允许读取工作目录之外的文件"}
 
+    # 检查是否是目录
+    if resolved.is_dir():
+        return {"success": False, "error": f"'{raw}' 是目录，不是文件"}
+
     # 安全校验：限制最大 500KB
     if resolved.stat().st_size > 500 * 1024:
         return {"success": False, "error": "文件超过 500KB，不支持读取"}
