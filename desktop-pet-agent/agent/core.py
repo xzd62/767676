@@ -138,19 +138,10 @@ class Agent:
                         self._on_status(f"工具执行失败: {obs.get('error', '未知错误')}")
                         self._stm.add_message("status", f"工具执行失败: {obs.get('error', '未知错误')}")
 
-                    if name == "bash":
-                        out = obs.get("output", "")
-                        if out:
-                            self._on_status(out)
-                            self._stm.add_message("status", out)
-                    elif name == "write_file":
+                    if name == "write_file":
                         wp = f"写入: {args.get('path', '')}"
                         self._on_status(wp)
                         self._stm.add_message("status", wp)
-                        wc = args.get("content", "")
-                        if wc:
-                            self._on_status(wc)
-                            self._stm.add_message("status", wc)
                         if args["path"].endswith(".py"):
                             vr = registry.dispatch('verify', {'path': args['path']})
                             if vr.get("valid") == False:
@@ -204,18 +195,10 @@ class Agent:
                         self._on_status("已取消")
                         return INTERRUPTED_MARK
 
-                    if tname == "bash":
-                        out = obs.get("output", "")
-                        if out:
-                            self._on_status(out)
-                            self._stm.add_message("status", out)
-                    elif tname == "write_file":
+                    if tname == "write_file":
                         wp = f"写入: {args.get('path', '')}"
                         self._on_status(wp)
                         self._stm.add_message("status", wp)
-                        wc = args.get("content", "")
-                        if wc:
-                            self._on_status(wc)
                     elif tname == "glob":
                         cnt = len(obs.get("files", []))
                         self._on_status(f"({cnt}个匹配)")
