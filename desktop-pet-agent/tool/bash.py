@@ -1,6 +1,10 @@
-"""命令执行工具。"""
+"""命令执行工具 — 支持中断轮询。"""
+
+import subprocess
+import time
 
 from tool.registry import registry
+from tool import cancel
 
 BASH_SCHEMA = {
     "name": "bash",
@@ -26,33 +30,74 @@ BLOCKED_PATTERNS = [
     "shutdown", "reboot", "init 0", "poweroff",
 ]
 
+_POLL_INTERVAL = 0.3  # 每 300ms 检查一次取消标志
+
 
 def bash_handler(args):
-    import subprocess
     from config.settings import get_work_dir
 
     command = args["command"]
     timeout = args.get("timeout", 30)
 
-    result = subprocess.run(
+    process = subprocess.Popen(
         command,
         shell=True,
         cwd=str(get_work_dir()),
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=timeout,
-        )
-    
-    output = result.stdout
-    if result.stderr:
-        output += "\n" + result.stderr
+    )
+
+    stdout_lines = []
+    stderr_lines = []
+    start = time.time()
+
+    # 逐行读取 stdout，同时轮询取消标志
+    while True:
+        if cancel.is_requested():
+            process.kill()
+            process.wait()
+            return {
+                "success": False,
+                "output": "[interrupted]",
+                "returncode": -1,
+            }
+
+        # 读一行（非阻塞 + 短超时）
+        line = process.stdout.readline()
+        if line:
+            stdout_lines.append(line)
+        else:
+            # stdout 读完了，检查进程是否结束
+            ret = process.poll()
+            if ret is not None:
+                break
+
+        # 超时检查
+        if time.time() - start > timeout:
+            process.kill()
+            process.wait()
+            return {
+                "success": False,
+                "output": "".join(stdout_lines) + "\n[timeout]",
+                "returncode": -1,
+            }
+
+        time.sleep(_POLL_INTERVAL)
+
+    # 收集剩余 stderr
+    stderr_lines = process.stderr.readlines()
+
+    output = "".join(stdout_lines)
+    if stderr_lines:
+        output += "\n" + "".join(stderr_lines)
 
     return {
-        "success": result.returncode == 0,
+        "success": process.returncode == 0,
         "output": output.strip(),
-        "returncode": result.returncode,
+        "returncode": process.returncode,
     }
 
 

@@ -19,21 +19,7 @@ LOAD_SKILL_SCHEMA = {
 }
 
 
-# ============================================================
-#  ★ 你来实现这部分 ★
-#  从 SkillRegistry 查找并返回技能指引
-# ============================================================
 def load_skill_handler(args):
-    """根据技能名称加载指引。
-
-    你需要完成：
-      1. 提取 name 参数
-      2. 从 skill.registry.get_registry() 获取 registry
-      3. 用 registry.get_skill(name) 查找
-      4. 找到 → 返回 {"success": True, "content": skill.prompt}
-      5. 没找到 → 返回 {"success": False, "error": "技能 'xxx' 不存在"}
-    """
-    # ── 你的代码写在这里 ──
     name = args["name"]
 
     registry = get_registry()

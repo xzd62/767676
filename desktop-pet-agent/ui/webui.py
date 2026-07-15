@@ -5,7 +5,7 @@ from pathlib import Path
 
 import webview
 
-from agent.core import Agent, CancelledError
+from agent.core import Agent, INTERRUPTED_MARK
 from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist, add_mcp_server
 from llm.client import LLMClient
 from ltm.store import MemoryStore
@@ -127,16 +127,16 @@ class Api:
         try:
             reply = self._agent.process(text)
             self._save_conv(conv_id=saved_conv_id)
+            if reply == INTERRUPTED_MARK:
+                self._stm.add_message("status", "已中断")
+                self._status_queue.append("__INTERRUPTED__")
+                return
             reply = reply.lstrip("：:　 \t\n\r")
             import re
             mm = re.search(r"\[(.+?)\]", reply)
             if mm:
                 self._pending_mood = mm.group(1).strip("：:")
             self._status_queue.append(f"__REPLY__:{reply}")
-        except CancelledError:
-            self._stm.add_message("status", "已中断")
-            self._save_conv(conv_id=saved_conv_id)
-            self._status_queue.append("__INTERRUPTED__")
         except Exception as e:
             self._status_queue.append(f"__ERROR__:{e}")
 
