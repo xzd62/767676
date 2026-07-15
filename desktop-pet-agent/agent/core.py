@@ -73,6 +73,7 @@ class Agent:
 
     def process(self, user_input: str) -> str:
         cancel.clear()
+        self._llm.reset_turn_usage()
         self._stm.add_message("user", user_input)
         all_tools = registry.get_schemas()
         if self._mode == "plan":

@@ -43,8 +43,8 @@ class Api:
 
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
-        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:")]
-        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:")]
+        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:") and not x.startswith("__TOKEN__:")]
+        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:") or x.startswith("__TOKEN__:")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
@@ -131,6 +131,10 @@ class Api:
                 self._stm.add_message("status", "已中断")
                 self._status_queue.append("__INTERRUPTED__")
                 return
+            tu = self._llm.turn_usage
+            turn_total = tu["prompt"] + tu["completion"]
+            self._session_mgr.add_tokens(saved_conv_id, turn_total)
+            self._status_queue.append(f"__TOKEN__:{json.dumps(tu)}")
             reply = reply.lstrip("：:　 \t\n\r")
             import re
             mm = re.search(r"\[(.+?)\]", reply)
@@ -306,6 +310,9 @@ class Api:
 
     def set_mode(self, mode: str):
         self._agent.set_mode(mode)
+
+    def get_conv_total_tokens(self, conv_id: int) -> int:
+        return self._session_mgr.get_tokens(conv_id)
 
 
 def _start_tray():

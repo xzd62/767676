@@ -98,6 +98,10 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .mcp-add-card{border:2px dashed #d0c0a8;border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:#a08c78;background:transparent;transition:all 0.2s}
 .mcp-add-card:hover{border-color:#e8783a;color:#e8783a;background:#faf0e4}
 
+/* Token 栏 */
+#pageChat{position:relative}
+.token-bar{position:absolute;bottom:10px;right:32px;font-size:11px;color:#a08c78;background:#faf6f0;padding:3px 10px;border-radius:6px;border:1px solid #e8d8c4;line-height:1.5}
+
 /* 技能页面 */
 .skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:4px 0}
 .skill-card{border:1px solid #e8d8c4;border-radius:12px;padding:18px;background:white;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;position:relative}
@@ -174,6 +178,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="onSendClick()">→</button>
     </div>
+    <div class="token-bar" id="tokenBar">--</div>
     <div class="mode-bar" id="modeBar" onclick="toggleMode()" title="点击或按 Tab 切换模式">
       <span class="mode-dot" id="modeDot"></span>
       <span id="modeLabel">规划模式</span>
@@ -510,10 +515,22 @@ function stopTyping() {
   setBusy(false);
 }
 
+let _lastConvTokens = 0;
+
+function updateTokenBar(turnTokens) {
+  const total = _lastConvTokens + turnTokens;
+  const k = (total / 1000).toFixed(1);
+  const pct = (total / 10000).toFixed(1);
+  document.getElementById('tokenBar').textContent = k + 'k (' + pct + '%)';
+}
+
 async function pollStatus() {
   const data = await pywebview.api.get_status_updates();
   for (const item of JSON.parse(data)) {
-    if (item.startsWith('__TEXT__:')) {
+    if (item.startsWith('__TOKEN__:')) {
+      const tu = JSON.parse(item.slice(10));
+      updateTokenBar(tu.prompt + tu.completion);
+    } else if (item.startsWith('__TEXT__:')) {
       appendMsg('assistant', item.slice(9));
     } else {
       appendStatus(item);
@@ -580,6 +597,8 @@ async function switchConv(id) {
   if (hit) document.getElementById('convTitle').textContent = hit.name;
   document.querySelectorAll('.nav-conv-item').forEach(e=>{ if(e.textContent.includes(hit?hit.name:'')) e.classList.add('active'); });
   document.getElementById('messages').innerHTML = '';
+  _lastConvTokens = await pywebview.api.get_conv_total_tokens(id);
+  updateTokenBar(0);
   const msgs = await pywebview.api.get_history();
   for (const m of JSON.parse(msgs)) {
     if (m.role === 'system' || m.role === 'tool') continue;

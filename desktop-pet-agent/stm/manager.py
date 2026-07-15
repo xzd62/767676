@@ -40,6 +40,10 @@ class SessionManager:
                 FOREIGN KEY (conversation_id) REFERENCES conversations(id)
             );
         """)
+        try:
+            self._db.execute("ALTER TABLE conversations ADD COLUMN total_tokens INTEGER DEFAULT 0")
+        except Exception:
+            pass
         self._db.commit()
 
     # ------------------------------------------------------------------
@@ -49,7 +53,7 @@ class SessionManager:
     def list_conversations(self) -> list[dict]:
         workdir = str(get_work_dir())
         rows = self._db.execute(
-            "SELECT id, name, created_at FROM conversations WHERE workdir=? ORDER BY id DESC",
+            "SELECT id, name, created_at, total_tokens FROM conversations WHERE workdir=? ORDER BY id DESC",
             (workdir,),
         ).fetchall()
         return [dict(r) for r in rows]
@@ -143,6 +147,19 @@ class SessionManager:
         self._current_id = conv_id
         stm.clear()
         return conv_id
+
+    def add_tokens(self, conv_id: int, tokens: int):
+        self._db.execute(
+            "UPDATE conversations SET total_tokens = COALESCE(total_tokens, 0) + ? WHERE id=?",
+            (tokens, conv_id),
+        )
+        self._db.commit()
+
+    def get_tokens(self, conv_id: int) -> int:
+        row = self._db.execute(
+            "SELECT total_tokens FROM conversations WHERE id=?", (conv_id,),
+        ).fetchone()
+        return row[0] if row and row[0] else 0
 
     def close(self):
         self._db.close()

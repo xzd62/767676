@@ -23,6 +23,12 @@ class LLMClient:
 
         self.client = httpx.Client(base_url=self.base_url, headers={"Authorization": f"Bearer {self.api_key}"}, timeout=LLM_TIMEOUT)
 
+        self.last_usage = None
+        self.turn_usage = {"prompt": 0, "completion": 0, "reasoning": 0}
+
+    def reset_turn_usage(self):
+        self.turn_usage = {"prompt": 0, "completion": 0, "reasoning": 0}
+
     def refresh(self):
         """刷新运行时配置（模型名、API Key 变更后调用）。"""
         self.api_key = get_llm_api_key()
@@ -50,6 +56,13 @@ class LLMClient:
             print("TOOLS:", len(tools) if tools else 0)
         response.raise_for_status()
         data = response.json()
+
+        usage = data.get("usage", {})
+        self.last_usage = usage
+        self.turn_usage["prompt"] += usage.get("prompt_tokens", 0)
+        self.turn_usage["completion"] += usage.get("completion_tokens", 0)
+        self.turn_usage["reasoning"] += usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+
         return data["choices"][0]["message"]
 
     def chat_stream(self, messages: list[dict]):
