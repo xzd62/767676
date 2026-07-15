@@ -174,6 +174,7 @@ class Api:
         root.destroy()
         if path:
             set_work_dir(path)
+            self._agent._setup_system_prompt()
         return str(get_work_dir())
 
     def rename_conv(self, conv_id: int, name: str):

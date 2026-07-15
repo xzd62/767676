@@ -30,11 +30,32 @@ class Agent:
         self._setup_system_prompt()
 
     def _setup_system_prompt(self):
-        memories = self._ltm.load()
-        full_prompt = SYSTEM_PROMPT + "\n\n" + RESPONSE_PROMPT
+        from pathlib import Path
+        from config.settings import get_soul, get_rules, get_work_dir
 
-        from config.settings import get_soul, get_rules
+        # 读取基础提示词模板
+        prompt_path = Path(__file__).resolve().parent.parent / "config" / "base_prompt.md"
+        full_prompt = prompt_path.read_text(encoding="utf-8")
 
+        # 替换 {skills}
+        from skill.registry import get_registry
+        reg = get_registry()
+        skill_list = reg.list_skills()
+        if skill_list:
+            lines = [f"- {s['name']}: {s['description']}" for s in skill_list]
+            lines.append("\n如需使用某个技能，调用 `load_skill(name=\"技能名\")` 加载详细指引。")
+            full_prompt = full_prompt.replace("{skills}", "\n".join(lines))
+        else:
+            full_prompt = full_prompt.replace("{skills}", "（无）")
+
+        # 替换 {mode}
+        mode_desc = {
+            "plan": "你处于「规划模式」。只给出方案、思路和建议，不要编辑任何文件或执行任何命令。你可以读取文件和搜索代码来了解项目现状。",
+            "build": "你处于「构建模式」。可以自由调用工具来读写文件、执行命令、完成开发任务。",
+        }
+        full_prompt = full_prompt.replace("{mode}", mode_desc[self._mode])
+
+        # 追加可选区块
         rules = get_rules()
         if rules:
             full_prompt += f"\n\n## 用户规则\n{rules}"
@@ -43,22 +64,11 @@ class Agent:
         if soul:
             full_prompt += f"\n\n## 桌宠灵魂\n{soul}"
 
-        from skill.registry import get_registry
-        reg = get_registry()
-        skill_list = reg.list_skills()
-        if skill_list:
-            lines = [f"- {s['name']}: {s['description']}" for s in skill_list]
-            full_prompt += "\n\n### 可用技能\n" + "\n".join(lines)
-            full_prompt += "\n\n如需使用某个技能，调用 `load_skill(name=\"技能名\")` 加载详细指引。"
-
-        mode_desc = {
-            "plan": "你处于「规划模式」。只给出方案、思路和建议，不要编辑任何文件或执行任何命令。你可以读取文件和搜索代码来了解项目现状。",
-            "build": "你处于「构建模式」。可以自由调用工具来读写文件、执行命令、完成开发任务。",
-        }
-        full_prompt += f"\n\n## 当前模式\n{mode_desc[self._mode]}"
-
+        memories = self._ltm.load()
         if memories:
             full_prompt += f"\n\n## 长期记忆\n{memories}"
+
+        full_prompt += f"\n\n## 工作目录\n{get_work_dir()}"
 
         self._stm.add_system(full_prompt)
 
