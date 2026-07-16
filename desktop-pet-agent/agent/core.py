@@ -1,6 +1,7 @@
 """Agent 调度层：ReAct 模式，串联 llm / stm / ltm。"""
 
 import json
+import time
 
 from tool import cancel
 
@@ -146,10 +147,13 @@ class Agent:
                     if name == "ask_user":
                         self._on_status(f"__ASK_USER__:{args.get('question', '')}")
 
+                    _t0 = time.time()
                     try:
                         obs = registry.dispatch(name, args)
                     except Exception as e:
                         obs = {"success": False, "error": f"工具执行异常: {e}"}
+                    _elapsed = time.time() - _t0
+                    self._on_status(f"完成 ({_elapsed:.1f}s)")
 
                     if not obs.get("success", True):
                         self._on_status(f"工具执行失败: {obs.get('error', '未知错误')}")
@@ -220,7 +224,10 @@ class Agent:
                         cmd = f"运行: {args.get('command', '')}"
                         self._on_status(cmd)
                         self._stm.add_message("status", cmd)
+                    _t0 = time.time()
                     obs = registry.dispatch(tname, args)
+                    _elapsed = time.time() - _t0
+                    self._on_status(f"完成 ({_elapsed:.1f}s)")
 
                     if cancel.is_requested():
                         self._on_status("已取消")
