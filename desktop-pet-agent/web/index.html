@@ -617,6 +617,15 @@ async function switchConv(id) {
       } else if (m.content) {
         appendStatus(m.content);
       }
+    } else if (m.role === 'plan') {
+      try {
+        const p = JSON.parse(m.content);
+        const steps = p.steps.map((s,i) => (s.done ? '✅' : '☐') + ' ' + esc(s.text)).join('<br>');
+        const el = document.getElementById('messages');
+        const d = document.createElement('div'); d.className = 'msg msg-status';
+        d.innerHTML = '<div class="msg-bubble" style="color:#2c1f14;font-size:12px;padding:2px 14px">📋 ' + esc(p.title) + '<br>' + steps + '</div>';
+        el.appendChild(d); el.scrollTop = el.scrollHeight;
+      } catch(e) {}
     }
   }
   // 切回对话页
