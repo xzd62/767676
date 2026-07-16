@@ -59,15 +59,15 @@ class SessionContext:
                 clean.append(m)
                 expect_tool -= 1
             else:
-                if expect_tool > 0:
+                if expect_tool > 0 and m.get("role") not in ("status", "plan"):
                     while clean and clean[-1].get("role") in ("tool", "assistant"):
                         if clean[-1].get("role") == "assistant":
                             clean.pop()
                             break
                         clean.pop()
+                    expect_tool = 0
                 if m.get("role") != "tool":
                     clean.append(m)
-                expect_tool = 0
         # 循环结束后如果还有未配对的 tool_calls，回退
         if expect_tool > 0:
             while clean and clean[-1].get("role") in ("tool", "assistant"):
