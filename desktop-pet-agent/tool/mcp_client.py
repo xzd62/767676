@@ -50,17 +50,31 @@ class _Connection:
 _connections: list = []
 
 
-def init():
+def _sync():
+    """同步配置文件和活跃连接：新增未连的、删除已移除的、跳过已连的。"""
     from config.settings import get_mcp_servers
 
     servers = get_mcp_servers()
+    config_names = {s.get("name") for s in servers}
+    connected_names = {c.name for c in _connections}
+
+    # 删除配置中已不存在的连接
+    for conn in list(_connections):
+        if conn.name not in config_names:
+            if conn.status == "connected":
+                _run_async(conn.close())
+            _connections.remove(conn)
+            _unregister_tools(conn.name)
+
+    # 新增配置中有但未连接的
     for cfg in servers:
         name = cfg.get("name", "unknown")
-        command = cfg.get("command", "")
-        args = cfg.get("args", [])
-        env = cfg.get("env", {})
+        if name not in connected_names:
+            _connect_one(name, cfg.get("command", ""), cfg.get("args", []), cfg.get("env", {}))
 
-        _connect_one(name, command, args, env)
+
+def init():
+    _sync()
 
 
 def _connect_one(name, command, args, env):
@@ -141,6 +155,7 @@ def _unregister_tools(server_name):
 
 
 def get_status():
+    _sync()
     result = []
     for conn in _connections:
         result.append({

@@ -74,6 +74,7 @@ class SkillRegistry:
             self._skills[name].enabled = False
 
     def list_skills(self) -> list[dict]:
+        self.scan()
         return [
             {"name": s.name, "description": s.description, "enabled": s.enabled}
             for s in self._skills.values()
