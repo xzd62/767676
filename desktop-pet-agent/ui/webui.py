@@ -6,6 +6,7 @@ from pathlib import Path
 import webview
 
 from agent.core import Agent, INTERRUPTED_MARK
+from ui.tray import TrayApp
 from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist, add_mcp_server
 from llm.client import LLMClient
 from ltm.store import MemoryStore
@@ -43,8 +44,8 @@ class Api:
 
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
-        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:") and not x.startswith("__TOKEN__:")]
-        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:") or x.startswith("__TOKEN__:")]
+        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:") and not x.startswith("__TOKEN__:") and not x.startswith("__PLAN__:")]
+        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:") or x.startswith("__TOKEN__:") or x.startswith("__PLAN__:")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
@@ -316,19 +317,34 @@ class Api:
         return self._session_mgr.get_tokens(conv_id)
 
 
+def _start_tray(window):
+    def on_open():
+        window.show()
+        window.restore()
+
+    def on_exit():
+        import os
+        os._exit(0)
+
+    tray = TrayApp(on_open=on_open, on_exit=on_exit)
+    tray.run()
+
+
 def run():
     srcdir = Path(__file__).resolve().parent.parent / "web"
     set_work_dir(srcdir.parent)
 
-    webview.create_window(
+    window = webview.create_window(
         "CodePet",
         str(srcdir / "index.html"),
         width=1280,
         height=800,
         resizable=True,
         js_api=Api(),
-        tray=True,
+        confirm_close=True,
     )
+
+    threading.Thread(target=_start_tray, args=(window,), daemon=True).start()
     webview.start(debug=False)
 
 

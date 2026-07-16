@@ -15,6 +15,8 @@ import tool.bash
 import tool.verify
 import tool.web_fetch
 import tool.load_skill
+import tool.create_task_list
+import tool.check_step
 import tool.mcp_client
 
 from ui.webui import run

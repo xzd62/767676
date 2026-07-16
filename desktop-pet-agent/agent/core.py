@@ -58,6 +58,8 @@ class Agent:
         # 替换 {workdir}
         full_prompt = full_prompt.replace("{workdir}", str(get_work_dir()))
 
+        full_prompt += "\n\n对于需要多步骤的复杂任务，先调用 `create_task_list` 拆解为步骤清单，然后逐步执行。每完成一步调用 `check_step` 标记。"
+
         # 追加可选区块
         rules = get_rules()
         if rules:
@@ -173,6 +175,13 @@ class Agent:
 
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
+
+                    if name in ("create_task_list", "check_step"):
+                        from agent import plan as plan_mod
+                        p = plan_mod.get()
+                        if p:
+                            self._stm.add_message("plan", json.dumps(p, ensure_ascii=False))
+                            self._on_status(f"__PLAN__:{json.dumps(p, ensure_ascii=False)}")
 
                     if cancel.is_requested():
                         self._on_status("已取消")

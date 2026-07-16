@@ -527,7 +527,14 @@ function updateTokenBar(turnTokens) {
 async function pollStatus() {
   const data = await pywebview.api.get_status_updates();
   for (const item of JSON.parse(data)) {
-    if (item.startsWith('__TOKEN__:')) {
+    if (item.startsWith('__PLAN__:')) {
+      const p = JSON.parse(item.slice(9));
+      const steps = p.steps.map((s,i) => (s.done ? '✅' : '☐') + ' ' + esc(s.text)).join('<br>');
+      const msgs = document.getElementById('messages');
+      const d = document.createElement('div'); d.className = 'msg msg-status';
+      d.innerHTML = '<div class="msg-bubble" style="color:#2c1f14;font-size:12px;padding:2px 14px">📋 ' + esc(p.title) + '<br>' + steps + '</div>';
+      msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+    } else if (item.startsWith('__TOKEN__:')) {
       const tu = JSON.parse(item.slice(10));
       updateTokenBar(tu.prompt + tu.completion);
     } else if (item.startsWith('__TEXT__:')) {
