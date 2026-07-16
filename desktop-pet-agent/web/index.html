@@ -178,6 +178,13 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
       <textarea id="input" rows="2" placeholder="输入消息…" onkeydown="onInputKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="onSendClick()">→</button>
     </div>
+    <div class="question-bar" id="questionBar" style="display:none">
+      <span style="font-size:12px;color:#2c1f14;font-weight:bold;margin-bottom:4px">❓ Agent 需要确认</span>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="questionInput" style="flex:1;padding:8px 12px;border:1px solid #e8d8c4;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitAnswer()}">
+        <button class="btn btn-primary" onclick="submitAnswer()" style="font-size:13px">提交</button>
+      </div>
+    </div>
     <div class="token-bar" id="tokenBar">--</div>
     <div class="mode-bar" id="modeBar" onclick="toggleMode()" title="点击或按 Tab 切换模式">
       <span class="mode-dot" id="modeDot"></span>
@@ -514,6 +521,19 @@ function stopTyping() {
   if (_typingTimer) { clearTimeout(_typingTimer); _typingTimer = null; }
   setBusy(false);
 }
+function showQuestionInput(q) {
+  const bar = document.getElementById('questionBar');
+  bar.style.display = 'block';
+  document.getElementById('questionInput').focus();
+}
+function submitAnswer() {
+  const inp = document.getElementById('questionInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  document.getElementById('questionBar').style.display = 'none';
+  pywebview.api.answer_question(text);
+}
 
 let _lastConvTokens = 0;
 
@@ -527,7 +547,16 @@ function updateTokenBar(turnTokens) {
 async function pollStatus() {
   const data = await pywebview.api.get_status_updates();
   for (const item of JSON.parse(data)) {
-    if (item.startsWith('__PLAN__:')) {
+    if (item.startsWith('__USER_ANSWER__:')) {
+      appendMsg('user', item.slice(16));
+    } else if (item.startsWith('__ASK_USER__:')) {
+      const q = item.slice(13);
+      const el = document.getElementById('messages');
+      const d = document.createElement('div'); d.className = 'msg msg-status';
+      d.innerHTML = '<div class="msg-bubble" style="color:#2c1f14;font-size:12px;padding:2px 14px">❓ ' + esc(q) + '</div>';
+      el.appendChild(d); el.scrollTop = el.scrollHeight;
+      showQuestionInput(q);
+    } else if (item.startsWith('__PLAN__:')) {
       const p = JSON.parse(item.slice(9));
       const steps = p.steps.map((s,i) => (s.done ? '✅' : '☐') + ' ' + esc(s.text)).join('<br>');
       const msgs = document.getElementById('messages');

@@ -44,8 +44,8 @@ class Api:
 
     def get_status_updates(self) -> str:
         items = list(self._status_queue)
-        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:") and not x.startswith("__TOKEN__:") and not x.startswith("__PLAN__:")]
-        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:") or x.startswith("__TOKEN__:") or x.startswith("__PLAN__:")]
+        self._status_queue[:] = [x for x in items if x.startswith("__") and not x.startswith("__TEXT__:") and not x.startswith("__TOKEN__:") and not x.startswith("__PLAN__:") and not x.startswith("__ASK_USER__:") and not x.startswith("__USER_ANSWER__:")]
+        plain = [x for x in items if not x.startswith("__") or x.startswith("__TEXT__:") or x.startswith("__TOKEN__:") or x.startswith("__PLAN__:") or x.startswith("__ASK_USER__:") or x.startswith("__USER_ANSWER__:")]
         return json.dumps(plain, ensure_ascii=False)
 
     def check_reply(self) -> str:
@@ -315,6 +315,10 @@ class Api:
 
     def get_conv_total_tokens(self, conv_id: int) -> int:
         return self._session_mgr.get_tokens(conv_id)
+
+    def answer_question(self, text: str):
+        from agent import question
+        question.answer(text)
 
 
 def _start_tray(window):

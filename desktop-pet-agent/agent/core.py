@@ -145,6 +145,9 @@ class Agent:
                         self._on_status(cmd)
                         self._stm.add_message("status", cmd)
 
+                    if name == "ask_user":
+                        self._on_status(f"__ASK_USER__:{args.get('question', '')}")
+
                     try:
                         obs = registry.dispatch(name, args)
                     except Exception as e:
@@ -172,6 +175,11 @@ class Agent:
                         cnt = len(obs.get("matches", []))
                         self._on_status(f"（{cnt}个匹配）")
                         self._stm.add_message("status", f"（{cnt}个匹配）")
+
+                    if name == "ask_user" and obs.get("success"):
+                        answer = obs.get("answer", "")
+                        self._on_status(f"__USER_ANSWER__:{answer}")
+                        self._stm.add_message("status", f"__USER_ANSWER__:{answer}")
 
                     self._stm.add_message("tool", json.dumps(obs, ensure_ascii=False),
                                           tool_call_id=tc["id"])
