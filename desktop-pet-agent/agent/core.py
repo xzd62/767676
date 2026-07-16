@@ -55,6 +55,9 @@ class Agent:
         }
         full_prompt = full_prompt.replace("{mode}", mode_desc[self._mode])
 
+        # 替换 {workdir}
+        full_prompt = full_prompt.replace("{workdir}", str(get_work_dir()))
+
         # 追加可选区块
         rules = get_rules()
         if rules:
@@ -67,8 +70,6 @@ class Agent:
         memories = self._ltm.load()
         if memories:
             full_prompt += f"\n\n## 长期记忆\n{memories}"
-
-        full_prompt += f"\n\n## 工作目录\n{get_work_dir()}"
 
         self._stm.add_system(full_prompt)
 
