@@ -4,6 +4,20 @@ from tool.registry import registry
 import html2text
 import httpx
 
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Referer": "https://www.google.com/",
+    "DNT": "1",
+    "Connection": "keep-alive",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "cross-site",
+    "Upgrade-Insecure-Requests": "1",
+}
+
 WEB_FETCH_SCHEMA = {
     "name": "web_fetch",
     "description": "抓取网页内容，支持转 Markdown",
@@ -42,7 +56,7 @@ def web_fetch_handler(args):
         return {"success": False, "error": "只支持 http/https 协议"}
 
     try:
-        response = httpx.get(url, timeout=timeout, follow_redirects=True)
+        response = httpx.get(url, timeout=timeout, follow_redirects=True, headers=BROWSER_HEADERS)
         response.raise_for_status()
     except Exception as e:
         return {"success": False, "error": f"请求失败: {e}"}
