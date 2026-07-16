@@ -31,20 +31,6 @@ BLOCKED_PATTERNS = [
 ]
 
 _POLL_INTERVAL = 0.3  # 每 300ms 检查一次取消标志
-_current_proc: subprocess.Popen | None = None
-
-
-def cancel_current():
-    global _current_proc
-    if _current_proc:
-        try:
-            _current_proc.kill()
-        except Exception:
-            pass
-
-
-def is_running() -> bool:
-    return _current_proc is not None
 
 
 def bash_handler(args):
@@ -63,8 +49,6 @@ def bash_handler(args):
         encoding="utf-8",
         errors="replace",
     )
-    global _current_proc
-    _current_proc = process
 
     stdout_lines = []
     stderr_lines = []
@@ -75,7 +59,6 @@ def bash_handler(args):
         if cancel.is_requested():
             process.kill()
             process.wait()
-            _current_proc = None
             return {
                 "success": False,
                 "output": "[interrupted]",
@@ -96,7 +79,6 @@ def bash_handler(args):
         if time.time() - start > timeout:
             process.kill()
             process.wait()
-            _current_proc = None
             return {
                 "success": False,
                 "output": "".join(stdout_lines) + "\n[timeout]",
@@ -112,7 +94,6 @@ def bash_handler(args):
     if stderr_lines:
         output += "\n" + "".join(stderr_lines)
 
-    _current_proc = None
     return {
         "success": process.returncode == 0,
         "output": output.strip(),
