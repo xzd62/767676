@@ -40,11 +40,6 @@ LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-v4-flash")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
 
-SYSTEM_PROMPT = "你是一个代码桌宠。请通过 function calling 机制调用工具，不要用文本模拟工具调用。如果工具返回错误，如实告知用户，不允许编造。"
-
-emotion = "默认、高兴、伤心、生气、思考"
-RESPONSE_PROMPT = f"回复前请加上[...]，“[]”里填写的是准确的情绪名。请尽可能从以下集合中挑选情绪名: {emotion} " 
-
 LTM_SUMMARIZE_INTERVAL = 10
 
 # 用户规则 (AGENTS.md)

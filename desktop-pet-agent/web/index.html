@@ -80,9 +80,7 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .settings-content.active{display:block}
 .settings-body textarea{width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;min-height:220px}
 .settings-body textarea:focus{border-color:#e8783a}
-.avatar-row{display:flex;gap:16px;align-items:flex-start}
-.avatar-preview{width:120px;height:120px;border-radius:10px;background:#ede0d0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#a08c78;overflow:hidden;flex-shrink:0}
-.avatar-preview img{width:100%;height:100%;object-fit:cover}
+
 
 /* MCP 页面 */
 .mcp-card{border:1px solid #e8d8c4;border-radius:10px;padding:16px;margin-bottom:12px;background:white}
@@ -701,15 +699,6 @@ async function loadSettings() {
   loadChars();
   document.getElementById('modelSelect').value = await pywebview.api.get_model();
   document.getElementById('apiKeyInput').value = await pywebview.api.get_apikey();
-  // 加载头像
-  const avatarData = await pywebview.api.get_avatar_data();
-  if (avatarData) {
-    updateLargePreview(avatarData);
-    document.getElementById('avatarPathDisplay').value = '已自定义头像';
-  } else {
-    updateLargePreview('');
-    document.getElementById('avatarPathDisplay').value = '';
-  }
 }
 function switchSettingTab(btn, id) {
   document.querySelectorAll('.settings-tab').forEach(e=>e.classList.remove('active'));
@@ -735,60 +724,6 @@ async function saveModel() {
   if (model) await pywebview.api.set_model(model);
   if (apikey && !apikey.includes('••••')) await pywebview.api.save_apikey(apikey);
   alert('模型设定已保存。');
-}
-async function onAvatarFile(event) {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    const dataUrl = e.target.result;
-    await pywebview.api.save_avatar_data(dataUrl);
-    updateLargePreview(dataUrl);
-    document.getElementById('avatarPathDisplay').value = file.name;
-    updatePetAvatar(dataUrl);
-  };
-  reader.readAsDataURL(file);
-  event.target.value = '';
-}
-async function clearAvatar() {
-  await pywebview.api.clear_avatar();
-  updateLargePreview('');
-  document.getElementById('avatarPathDisplay').value = '';
-  updatePetAvatar('');
-}
-function updateLargePreview(src) {
-  const el = document.getElementById('avatarLargePreview');
-  if (src) {
-    el.innerHTML = '<img src="'+esc(src)+'" style="max-width:100%;max-height:100%;object-fit:contain">';
-  } else {
-    el.innerHTML = `<svg width="120" height="120" viewBox="0 0 120 120">
-      <circle cx="60" cy="55" r="36" fill="#FFB347"/>
-      <polygon points="32,40 22,15 42,30" fill="#FF9F43"/>
-      <polygon points="88,40 98,15 78,30" fill="#FF9F43"/>
-      <ellipse cx="48" cy="50" rx="6" ry="7" fill="#333"/>
-      <ellipse cx="72" cy="50" rx="6" ry="7" fill="#333"/>
-      <polygon points="57,65 63,65 60,70" fill="#FF6B6B"/>
-      <path d="M52,71 Q58,76 60,71 Q62,76 68,71" fill="none" stroke="#555" stroke-width="2"/>
-    </svg>`;
-  }
-}
-function updateAvatarPreview(src) {
-  const el = document.getElementById('avatarPreview');
-  if (src) {
-    el.innerHTML = '<img src="'+esc(src)+'" style="width:100%;height:100%;object-fit:cover">';
-  } else { showDefaultAvatar(); }
-}
-function showDefaultAvatar() {
-  document.getElementById('avatarPreview').innerHTML =
-    `<svg width="80" height="80" viewBox="0 0 80 80">
-      <circle cx="40" cy="38" r="24" fill="#FFB347"/>
-      <polygon points="20,30 14,12 30,22" fill="#FF9F43"/>
-      <polygon points="60,30 66,12 50,22" fill="#FF9F43"/>
-      <ellipse cx="32" cy="34" rx="4" ry="5" fill="#333"/>
-      <ellipse cx="48" cy="34" rx="4" ry="5" fill="#333"/>
-      <polygon points="38,42 42,42 40,46" fill="#FF6B6B"/>
-      <path d="M34,46 Q38,50 40,46 Q42,50 46,46" fill="none" stroke="#555" stroke-width="1.5"/>
-    </svg>`;
 }
 
 // ---- MCP ----

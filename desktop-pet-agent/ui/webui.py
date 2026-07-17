@@ -7,7 +7,7 @@ import webview
 
 from agent.core import Agent, INTERRUPTED_MARK
 from ui.tray import TrayApp
-from config.settings import get_soul, set_soul, get_avatar_path, set_avatar_path, get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist, add_mcp_server
+from config.settings import get_llm_model, set_llm_model, get_llm_api_key, set_llm_api_key, get_work_dir, set_work_dir, get_rules, set_rules, rules_exist, add_mcp_server
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
@@ -174,17 +174,6 @@ class Api:
     def rename_conv(self, conv_id: int, name: str):
         self._session_mgr.rename_conversation(conv_id, name)
 
-    def get_soul(self) -> str:
-        from config.settings import get_active_character
-        from character import registry as cr
-        return cr.get_soul(get_active_character())
-
-    def save_soul(self, text: str):
-        from config.settings import get_active_character
-        from character import registry as cr
-        cr.save_soul(get_active_character(), text)
-        self._agent._setup_system_prompt()
-
     def get_rules(self) -> str:
         return get_rules()
 
@@ -199,36 +188,6 @@ class Api:
         """创建默认规则文件。"""
         default = ""
         set_rules(default)
-
-    def get_avatar(self) -> str:
-        return get_avatar_path() or ""
-
-    def pick_avatar(self, path: str):
-        set_avatar_path(path)
-
-    def save_avatar_data(self, data_url: str):
-        import re
-        match = re.match(r"data:image/(\w+);base64,(.+)", data_url)
-        if not match:
-            return ""
-        ext = match.group(1)
-        raw = base64.b64decode(match.group(2))
-        save_dir = Path(__file__).resolve().parent.parent / "character"
-        save_dir.mkdir(parents=True, exist_ok=True)
-        save_path = save_dir / f"default.{ext}"
-        save_path.write_bytes(raw)
-        set_avatar_path(str(save_path))
-
-    def get_avatar_data(self) -> str:
-        path = get_avatar_path()
-        if not path or not Path(path).exists():
-            return ""
-        raw = Path(path).read_bytes()
-        ext = Path(path).suffix.lstrip(".") or "png"
-        return f"data:image/{ext};base64,{base64.b64encode(raw).decode()}"
-
-    def clear_avatar(self):
-        set_avatar_path(None)
 
     def get_model(self) -> str:
         return get_llm_model()

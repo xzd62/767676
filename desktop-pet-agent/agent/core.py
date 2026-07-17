@@ -5,7 +5,7 @@ import time
 
 from tool import cancel
 
-from config.settings import SYSTEM_PROMPT, RESPONSE_PROMPT
+
 from llm.client import LLMClient
 from ltm.store import MemoryStore
 from stm.context import SessionContext
@@ -32,7 +32,7 @@ class Agent:
 
     def _setup_system_prompt(self):
         from pathlib import Path
-        from config.settings import get_soul, get_rules, get_work_dir
+        from config.settings import get_rules, get_work_dir
 
         # 读取基础提示词模板
         prompt_path = Path(__file__).resolve().parent.parent / "config" / "base_prompt.md"
