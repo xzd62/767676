@@ -357,7 +357,7 @@ def run():
     window.events.closing += api._save_conv
 
     threading.Thread(target=_start_tray, args=(window,), daemon=True).start()
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 
 if __name__ == "__main__":
