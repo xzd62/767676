@@ -123,6 +123,13 @@ class Agent:
                                       tool_calls=reply["tool_calls"])
                 if content_str:
                     self._on_status(f"__TEXT__:{content_str}")
+                    # 给前端假流式播放时间：约 350 字符/秒，最短 0.3s，最长 2s
+                    sleep_sec = min(max(len(content_str) / 350, 0.3), 2.0)
+                    # 分小段 Sleep 以便取消时快速响应
+                    for _ in range(int(sleep_sec / 0.1)):
+                        if cancel.is_requested():
+                            break
+                        time.sleep(0.1)
                 for tc in reply["tool_calls"]:
                     name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
@@ -159,7 +166,6 @@ class Agent:
                     self._on_status(f"完成 ({_elapsed:.1f}s)")
 
                     if not obs.get("success", True):
-                        self._on_status(f"工具执行失败: {obs.get('error', '未知错误')}")
                         self._stm.add_message("status", f"工具执行失败: {obs.get('error', '未知错误')}")
 
                     if name == "write_file":

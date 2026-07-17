@@ -500,6 +500,27 @@ function appendStatus(text) {
 }
 
 let _typingTimer = null;
+let _textAnimTimer = null;
+function animateTextReply(text) {
+  const msgs = document.getElementById('messages');
+  const d = document.createElement('div');
+  d.className = 'msg assistant';
+  d.innerHTML = '<div class="msg-header">CodePet</div><div class="msg-bubble"></div>';
+  msgs.appendChild(d);
+  const bubble = d.querySelector('.msg-bubble');
+  let i = 0;
+  function tick() {
+    if (!processing) { _textAnimTimer = null; return; }
+    if (i < text.length) {
+      const n = 3 + Math.floor(Math.random() * 6);
+      bubble.textContent += text.slice(i, i + n);
+      i += n;
+      msgs.scrollTop = msgs.scrollHeight;
+      _textAnimTimer = setTimeout(tick, 10 + Math.random() * 8);
+    } else { _textAnimTimer = null; }
+  }
+  tick();
+}
 function animateReply(text) {
   const msgs = document.getElementById('messages');
   const d = document.createElement('div');
@@ -521,6 +542,7 @@ function animateReply(text) {
 }
 function stopTyping() {
   if (_typingTimer) { clearTimeout(_typingTimer); _typingTimer = null; }
+  if (_textAnimTimer) { clearTimeout(_textAnimTimer); _textAnimTimer = null; }
   setBusy(false);
 }
 function showQuestionInput(q) {
@@ -569,7 +591,7 @@ async function pollStatus() {
       const tu = JSON.parse(item.slice(10));
       updateTokenBar(tu.prompt + tu.completion);
     } else if (item.startsWith('__TEXT__:')) {
-      appendMsg('assistant', item.slice(9));
+      animateTextReply(item.slice(9));
     } else {
       appendStatus(item);
       if (item.includes('思考')) setMood('思考');
@@ -641,7 +663,10 @@ async function switchConv(id) {
   for (const m of JSON.parse(msgs)) {
     if (m.role === 'system' || m.role === 'tool') continue;
     if (m.role === 'user') { appendMsg('user', m.content||''); }
-    else if (m.role === 'assistant') { appendMsg('assistant', m.content||''); }
+    else if (m.role === 'assistant') {
+        if (!m.content) continue;
+        appendMsg('assistant', m.content);
+    }
     else if (m.role === 'status') {
       if (m.content && m.content.startsWith('__TEXT__:')) {
         appendMsg('assistant', m.content.slice(9));
