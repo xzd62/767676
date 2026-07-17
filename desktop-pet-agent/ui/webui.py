@@ -67,16 +67,9 @@ class Api:
         return m
 
     def get_mood_image(self, mood: str) -> str:
-        """返回表情图片的 data URL。"""
-        char_dir = Path(__file__).resolve().parent.parent / "character"
-        for name in (mood, "默认"):
-            for ext in ("svg", "png", "jpg", "jpeg"):
-                p = char_dir / f"{name}.{ext}"
-                if p.exists():
-                    raw = p.read_bytes()
-                    mime = "image/svg+xml" if ext == "svg" else f"image/{ext}"
-                    return f"data:{mime};base64,{base64.b64encode(raw).decode()}"
-        return ""
+        from config.settings import get_active_character
+        from character import registry as cr
+        return cr._get_mood_data(get_active_character(), mood)
 
     def get_convs(self) -> str:
         convs = self._session_mgr.list_conversations()
@@ -182,10 +175,14 @@ class Api:
         self._session_mgr.rename_conversation(conv_id, name)
 
     def get_soul(self) -> str:
-        return get_soul()
+        from config.settings import get_active_character
+        from character import registry as cr
+        return cr.get_soul(get_active_character())
 
     def save_soul(self, text: str):
-        set_soul(text)
+        from config.settings import get_active_character
+        from character import registry as cr
+        cr.save_soul(get_active_character(), text)
         self._agent._setup_system_prompt()
 
     def get_rules(self) -> str:
@@ -324,6 +321,43 @@ class Api:
     def answer_question(self, text: str):
         from agent import question
         question.answer(text)
+
+    def get_characters(self) -> str:
+        from character import registry as cr
+        return json.dumps(cr.list_characters(), ensure_ascii=False)
+
+    def create_character(self, name: str):
+        from character import registry as cr
+        cr.create_character(name)
+
+    def delete_character(self, name: str):
+        from character import registry as cr
+        cr.delete_character(name)
+
+    def get_character_moods(self, name: str) -> str:
+        from character import registry as cr
+        return json.dumps(cr.get_moods(name), ensure_ascii=False)
+
+    def save_character_mood(self, name: str, mood: str, data_url: str):
+        from character import registry as cr
+        cr.save_mood_image(name, mood, data_url)
+
+    def get_character_soul(self, name: str) -> str:
+        from character import registry as cr
+        return cr.get_soul(name)
+
+    def save_character_soul(self, name: str, text: str):
+        from character import registry as cr
+        cr.save_soul(name, text)
+
+    def set_active_character(self, name: str):
+        from config.settings import set_active_character
+        set_active_character(name)
+        self._agent._setup_system_prompt()
+
+    def get_active_character(self) -> str:
+        from config.settings import get_active_character
+        return get_active_character()
 
 
 def _start_tray(window):

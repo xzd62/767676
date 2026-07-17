@@ -111,6 +111,13 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
 .skill-card-del{display:none;position:absolute;top:6px;right:10px;font-size:18px;color:#c0a898;cursor:pointer;line-height:1;padding:0 4px;border-radius:4px;background:rgba(255,255,255,0.8)}
 .skill-card-del:hover{color:#e8783a;background:#f0e8dc}
 .skill-card-add{border:2px dashed #d0c0a8;cursor:pointer;min-height:140px;justify-content:center}
+.char-card-img{width:100%;height:100px;object-fit:contain;border-radius:8px;margin-bottom:6px;background:#f5ede0}
+.char-card-active{position:absolute;top:8px;right:8px;font-size:14px;color:#e8783a}
+.char-mood-box{text-align:center;padding:8px;border:1px solid #e8d8c4;border-radius:8px;background:#faf6f0}
+.char-mood-box img{width:80px;height:80px;object-fit:contain;display:block;margin:0 auto 4px}
+.char-mood-box .mood-label{font-size:11px;color:#a08c78}
+.char-mood-upload{font-size:11px;color:#e8783a;cursor:pointer;margin-top:4px;display:inline-block}
+.char-mood-upload:hover{text-decoration:underline}
 .skill-card-add:hover{border-color:#e8783a;background:#faf6f0}
 .skill-card-add:hover span{color:#e8783a}
 .skill-card-desc{font-size:12px;color:#a08c78;margin-bottom:10px;min-height:1.2em}
@@ -225,6 +232,28 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
     </div>
   </div>
 
+  <!-- 角色包详情弹窗 -->
+  <div class="modal-overlay" id="charModal" onclick="hideCharDetail(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="charModalTitle">角色包</h3>
+        <div>
+          <button class="btn btn-secondary" id="charSetActiveBtn" style="margin-right:8px;font-size:12px">设为展示</button>
+          <button class="modal-close" onclick="hideCharDetail()">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body" id="charModalBody" style="white-space:normal">
+        <p style="font-size:13px;font-weight:bold;color:#a08c78;margin-bottom:8px">情绪立绘</p>
+        <div id="charMoodGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:16px"></div>
+        <p style="font-size:13px;font-weight:bold;color:#a08c78;margin-bottom:8px">灵魂设定</p>
+        <textarea id="charSoulInput" style="width:100%;padding:10px;border:1px solid #e8d8c4;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;min-height:120px"></textarea>
+      </div>
+      <div style="padding:12px 22px;border-top:1px solid #e8d8c4;text-align:right">
+        <button class="btn btn-primary" onclick="saveCharSoul()">保存灵魂设定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 技能详情弹窗（查看+编辑） -->
   <div class="modal-overlay" id="skillModal" onclick="hideSkillDetail(event)">
     <div class="modal-box">
@@ -269,33 +298,13 @@ body{font-family:"Microsoft YaHei","Inter",sans-serif;background:#f5ede0;color:#
         <div style="text-align:right"><button class="btn btn-primary" onclick="saveModel()">保存模型设定</button></div>
       </div>
       <div class="settings-content" id="stSoul">
-        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">人格设定。留空=默认性格，修改后需要重启对话生效。</p>
+        <p style="font-size:12px;color:#a08c78;margin-bottom:8px">当前角色包 <span id="soulCharName" style="font-weight:bold"></span> 的灵魂设定。修改后立即生效。</p>
         <textarea id="soulInput"></textarea>
-        <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveSoul()">保存灵魂设定</button></div>
+        <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="saveCharSoulFromSettings()">保存灵魂设定</button></div>
       </div>
       <div class="settings-content" id="stAvatar">
-        <p style="font-size:12px;color:#a08c78;margin-bottom:10px">设置桌宠的默认立绘，表情文件自动在 character/ 目录下关联。</p>
-        <div style="margin-bottom:12px">
-          <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/gif" hidden onchange="onAvatarFile(event)">
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-            <input type="text" id="avatarPathDisplay" readonly style="flex:1;padding:8px;border:1px solid #e8d8c4;border-radius:6px;font-size:12px;background:#f5ede0;color:#7a6050">
-            <button class="btn btn-secondary" onclick="document.getElementById('avatarFileInput').click()">选择图片</button>
-            <button class="btn btn-secondary" onclick="clearAvatar()">恢复默认</button>
-          </div>
-        </div>
-        <div style="background:#ede0d0;border-radius:10px;display:flex;align-items:center;justify-content:center;min-height:300px;overflow:hidden" id="avatarLargePreview">
-          <svg width="120" height="120" viewBox="0 0 120 120">
-            <circle cx="60" cy="55" r="36" fill="#FFB347"/>
-            <polygon points="32,40 22,15 42,30" fill="#FF9F43"/>
-            <polygon points="88,40 98,15 78,30" fill="#FF9F43"/>
-            <polygon points="35,36 25,20 43,33" fill="#FFB8B8"/>
-            <polygon points="85,36 95,20 77,33" fill="#FFB8B8"/>
-            <ellipse cx="48" cy="50" rx="4" ry="5" fill="#333"/>
-            <ellipse cx="72" cy="50" rx="4" ry="5" fill="#333"/>
-            <polygon points="57,65 63,65 60,70" fill="#FF6B6B"/>
-            <path d="M52,71 Q58,76 60,71 Q62,76 68,71" fill="none" stroke="#555" stroke-width="2"/>
-          </svg>
-        </div>
+        <div id="charGrid" class="skill-grid" style="margin-bottom:12px"></div>
+        <div class="skill-card-add" onclick="showCreateChar()" style="border:2px dashed #d0c0a8;padding:16px;text-align:center;cursor:pointer;color:#a08c78;border-radius:10px">+ 新建角色包</div>
       </div>
       <div class="settings-content" id="stTts">
         <p style="font-size:12px;color:#a08c78">语音合成功能开发中…</p>
@@ -694,7 +703,10 @@ async function deleteConv(id) {
 
 // ---- 设置 ----
 async function loadSettings() {
-  document.getElementById('soulInput').value = await pywebview.api.get_soul();
+  loadChars();
+  const active = await pywebview.api.get_active_character();
+  document.getElementById('soulCharName').textContent = active;
+  document.getElementById('soulInput').value = await pywebview.api.get_character_soul(active);
   document.getElementById('modelSelect').value = await pywebview.api.get_model();
   document.getElementById('apiKeyInput').value = await pywebview.api.get_apikey();
   // 加载头像
@@ -715,8 +727,12 @@ function switchSettingTab(btn, id) {
 }
 async function saveSoul() {
   const text = document.getElementById('soulInput').value.trim();
-  await pywebview.api.save_soul(text);
-  alert('灵魂设定已保存，重启对话后生效。');
+  const active = await pywebview.api.get_active_character();
+  await pywebview.api.save_character_soul(active, text);
+  alert('灵魂设定已保存。');
+}
+async function saveCharSoulFromSettings() {
+  await saveSoul();
 }
 async function createRules() {
   await pywebview.api.create_rules();
@@ -937,6 +953,90 @@ async function doCreateSkill(name, desc) {
   await pywebview.api.create_skill(name, desc);
   loadSkills();
 }
+// ---- 角色包 ----
+let _charModalName = '';
+async function loadChars() {
+  const data = JSON.parse(await pywebview.api.get_characters());
+  const active = await pywebview.api.get_active_character();
+  const grid = document.getElementById('charGrid'); grid.innerHTML = '';
+  for (const c of data) {
+    const isActive = c.name === active;
+    const imgHtml = c.preview ? '<img class="char-card-img" src="'+c.preview+'">' : '<div class="char-card-img" style="display:flex;align-items:center;justify-content:center;color:#c0b0a0;font-size:28px">?</div>';
+    grid.innerHTML += '' +
+      '<div class="skill-card" onclick="showCharDetail(\''+c.name+'\')" style="position:relative">' +
+        (isActive ? '<span class="char-card-active">★</span>' : '') +
+        '<span class="skill-card-del" onclick="event.stopPropagation();deleteChar(\''+c.name+'\')">&times;</span>' +
+        imgHtml +
+        '<div class="skill-card-name">'+esc(c.name)+'</div>' +
+        (isActive ? '<div style="font-size:11px;color:#e8783a">当前展示</div>' : '') +
+      '</div>';
+  }
+}
+async function showCharDetail(name) {
+  _charModalName = name;
+  document.getElementById('charModalTitle').textContent = name;
+  document.getElementById('charSetActiveBtn').style.display = 'inline-block';
+  document.getElementById('charModal').classList.add('show');
+  const moods = JSON.parse(await pywebview.api.get_character_moods(name));
+  const grid = document.getElementById('charMoodGrid'); grid.innerHTML = '';
+  for (const m of moods) {
+    const img = m.dataUrl ? '<img src="'+m.dataUrl+'">' : '<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;color:#c0b0a0;font-size:20px;margin:0 auto">?</div>';
+    grid.innerHTML += '' +
+      '<div class="char-mood-box">' +
+        img +
+        '<div class="mood-label">'+esc(m.mood)+'</div>' +
+        '<input type="file" accept="image/*" hidden onchange="uploadMood(this,\''+name+'\',\''+m.mood+'\')" id="moodFile_'+m.mood+'">' +
+        '<span class="char-mood-upload" onclick="document.getElementById(\'moodFile_'+m.mood+'\').click()">替换</span>' +
+      '</div>';
+  }
+  const soul = await pywebview.api.get_character_soul(name);
+  document.getElementById('charSoulInput').value = soul;
+}
+function hideCharDetail(event) {
+  if (event && event.target !== document.getElementById('charModal')) return;
+  document.getElementById('charModal').classList.remove('show');
+}
+async function uploadMood(input, name, mood) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    await pywebview.api.save_character_mood(name, mood, e.target.result);
+    showCharDetail(name);
+    if (mood === '默认') loadChars();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+async function setActiveChar(name) {
+  await pywebview.api.set_active_character(name);
+  document.getElementById('charModal').classList.remove('show');
+  loadChars();
+  setMood('默认');
+}
+document.getElementById('charSetActiveBtn').onclick = function() {
+  setActiveChar(_charModalName);
+};
+async function saveCharSoul() {
+  const text = document.getElementById('charSoulInput').value;
+  await pywebview.api.save_character_soul(_charModalName, text);
+  alert('灵魂设定已保存');
+}
+function showCreateChar() {
+  const name = prompt('角色包名称：');
+  if (!name || !name.trim()) return;
+  doCreateChar(name.trim());
+}
+async function doCreateChar(name) {
+  await pywebview.api.create_character(name);
+  loadChars();
+}
+async function deleteChar(name) {
+  if (!confirm('确定删除角色包 "'+name+'" ？')) return;
+  await pywebview.api.delete_character(name);
+  loadChars();
+}
+
 window.addEventListener('pywebviewready', async () => {
   await loadConvs();
   if (convs.length > 0) await switchConv(convs[0].id);
@@ -945,9 +1045,6 @@ window.addEventListener('pywebviewready', async () => {
   const wd = await pywebview.api.get_workdir();
   document.getElementById('workdirBtn').textContent = '📁 ' + wd.split('\\').pop();
   document.getElementById('workdirBtn').title = wd;
-  // 头像
-  const avatarData = await pywebview.api.get_avatar_data();
-  if (avatarData) updatePetAvatar(avatarData);
   // 宠物面板大小
   const ps = await pywebview.api.get_pet_size();
   document.getElementById('petPanel').style.width = ps + 'px';

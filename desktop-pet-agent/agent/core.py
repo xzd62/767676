@@ -64,7 +64,10 @@ class Agent:
         if rules:
             full_prompt += f"\n\n## 用户规则\n{rules}"
 
-        soul = get_soul()
+        from config.settings import get_active_character
+        from character import registry as char_reg
+        active_char = get_active_character()
+        soul = char_reg.get_soul(active_char)
         if soul:
             full_prompt += f"\n\n## 桌宠灵魂\n{soul}"
 

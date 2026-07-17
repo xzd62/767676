@@ -194,6 +194,20 @@ def set_agent_mode(mode: str):
     _update_env("AGENT_MODE", mode)
 
 
+# 活跃角色包
+_ACTIVE_CHARACTER = os.getenv("ACTIVE_CHARACTER", "default")
+
+
+def get_active_character() -> str:
+    return _ACTIVE_CHARACTER
+
+
+def set_active_character(name: str):
+    global _ACTIVE_CHARACTER
+    _ACTIVE_CHARACTER = name
+    _update_env("ACTIVE_CHARACTER", name)
+
+
 _ENV_PATH = Path(__file__).resolve().parent.parent / "settings.env"
 
 
