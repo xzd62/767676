@@ -62,6 +62,10 @@ def create_character(name: str):
     (dir / _SOUL_FILE).write_text("", encoding="utf-8")
 
 
+def rename_character(old_name: str, new_name: str):
+    (_BASE_DIR / old_name).rename(_BASE_DIR / new_name)
+
+
 def delete_character(name: str):
     import shutil
     dir = _BASE_DIR / name

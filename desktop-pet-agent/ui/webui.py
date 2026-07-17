@@ -334,6 +334,10 @@ class Api:
         from character import registry as cr
         cr.delete_character(name)
 
+    def rename_character(self, old_name: str, new_name: str):
+        from character import registry as cr
+        cr.rename_character(old_name, new_name)
+
     def get_character_moods(self, name: str) -> str:
         from character import registry as cr
         return json.dumps(cr.get_moods(name), ensure_ascii=False)
